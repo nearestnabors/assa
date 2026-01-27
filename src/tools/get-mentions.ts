@@ -13,7 +13,7 @@
 import { createUIResource } from '@mcp-ui/server';
 import { createMentionCardUI } from '../ui/mention-card.js';
 import { arcadeClient } from '../arcade/client.js';
-import { ensureAuth } from '../auth/manager.js';
+import { ensureAuth, handleToolError } from '../auth/manager.js';
 
 interface GetMentionsArgs {
   hours?: number;
@@ -32,43 +32,47 @@ export async function twitterGetMentions(
   }
 
   // Fetch mentions from Arcade
-  const mentions = await arcadeClient.getMentions({ hours, limit });
-  
-  if (mentions.length === 0) {
+  try {
+    const mentions = await arcadeClient.getMentions({ hours, limit });
+
+    if (mentions.length === 0) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `No mentions in the last ${hours} hours.`,
+          },
+        ],
+      };
+    }
+
+    // Build text summary
+    const textSummary = mentions
+      .map((m) => `@${m.author.handle}: "${m.text}" (${m.metrics.likes} likes)`)
+      .join('\n');
+
+    // Build UI cards
+    const uiCards = mentions.map((mention) =>
+      createUIResource({
+        uri: `ui://assa/mention/${mention.id}`,
+        content: {
+          type: 'rawHtml',
+          htmlString: createMentionCardUI(mention),
+        },
+        encoding: 'text',
+      })
+    );
+
     return {
       content: [
         {
           type: 'text',
-          text: `No mentions in the last ${hours} hours.`,
+          text: `Found ${mentions.length} mentions in the last ${hours} hours:\n\n${textSummary}`,
         },
+        ...uiCards,
       ],
     };
+  } catch (error) {
+    return handleToolError(error);
   }
-
-  // Build text summary
-  const textSummary = mentions
-    .map((m) => `@${m.author.handle}: "${m.text}" (${m.metrics.likes} likes)`)
-    .join('\n');
-
-  // Build UI cards
-  const uiCards = mentions.map((mention) =>
-    createUIResource({
-      uri: `ui://assa/mention/${mention.id}`,
-      content: {
-        type: 'rawHtml',
-        htmlString: createMentionCardUI(mention),
-      },
-      encoding: 'text',
-    })
-  );
-
-  return {
-    content: [
-      {
-        type: 'text',
-        text: `Found ${mentions.length} mentions in the last ${hours} hours:\n\n${textSummary}`,
-      },
-      ...uiCards,
-    ],
-  };
 }

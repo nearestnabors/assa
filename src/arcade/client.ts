@@ -8,8 +8,20 @@
  * - Tools: POST /tools/execute with tool_name like "X.PostTweet"
  */
 
+import { appendFileSync } from 'fs';
 import type { Mention } from '../ui/mention-card.js';
 import type { DM } from '../ui/dm-card.js';
+
+// Debug logger that writes to a file we can tail
+const LOG_FILE = '/tmp/assa-debug.log';
+function log(message: string, data?: unknown) {
+  const timestamp = new Date().toISOString();
+  const line = data
+    ? `[${timestamp}] ${message} ${JSON.stringify(data, null, 2)}\n`
+    : `[${timestamp}] ${message}\n`;
+  appendFileSync(LOG_FILE, line);
+  console.error(line.trim()); // Also keep stderr for good measure
+}
 
 const ARCADE_API_KEY = process.env.ARCADE_API_KEY;
 const ARCADE_BASE_URL = process.env.ARCADE_BASE_URL || 'https://api.arcade.dev/v1';
@@ -20,6 +32,9 @@ const ARCADE_USER_ID = process.env.ARCADE_USER_ID || 'assa-default-user';
 
 // Store the pending auth ID for status polling
 let pendingAuthId: string | null = null;
+
+// Store the authenticated user's username for mentions search
+let authenticatedUsername: string | null = null;
 
 interface ArcadeClient {
   // Auth
@@ -77,6 +92,16 @@ async function arcadeRequest<T>(
 }
 
 /**
+ * Custom error for auth-related failures
+ */
+export class AuthRequiredError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'AuthRequiredError';
+  }
+}
+
+/**
  * Execute an Arcade tool
  */
 async function executeTool<T>(toolName: string, input: Record<string, unknown>): Promise<T> {
@@ -91,6 +116,17 @@ async function executeTool<T>(toolName: string, input: Record<string, unknown>):
   });
 
   if (response.error) {
+    const errorLower = response.error.toLowerCase();
+    // Detect authorization-related errors
+    if (
+      errorLower.includes('not authorized') ||
+      errorLower.includes('unauthorized') ||
+      errorLower.includes('authorization required') ||
+      errorLower.includes('auth') && errorLower.includes('failed')
+    ) {
+      console.error(`[ASSA] Auth required for tool ${toolName}: ${response.error}`);
+      throw new AuthRequiredError(`Authorization required: ${response.error}`);
+    }
     throw new Error(`Tool ${toolName} failed: ${response.error}`);
   }
 
@@ -102,8 +138,13 @@ async function executeTool<T>(toolName: string, input: Record<string, unknown>):
  */
 const realArcadeClient: ArcadeClient = {
   async getAuthStatus() {
+    log('======== getAuthStatus called ========');
+    log('pendingAuthId:', pendingAuthId);
+    log('authenticatedUsername:', authenticatedUsername);
+
     // If we have a pending auth, check its status
     if (pendingAuthId) {
+      log('Checking status for pendingAuthId:', pendingAuthId);
       try {
         const response = await arcadeRequest<{
           status: string;
@@ -114,52 +155,61 @@ const realArcadeClient: ArcadeClient = {
           };
         }>('GET', `/auth/status?id=${encodeURIComponent(pendingAuthId)}`);
 
-        console.error(`[ASSA] Auth status response:`, response);
+        log('Auth status response:', response);
 
         if (response.status === 'completed') {
           const username = response.context?.user_info?.username;
+          log('Auth COMPLETED! username:', username);
           pendingAuthId = null; // Clear pending auth
+          if (username) {
+            authenticatedUsername = username; // Store for mentions search
+            log('Stored authenticated username:', `@${username}`);
+          }
           return { authorized: true, username };
         }
 
         // Still pending
+        log('Auth still pending, status:', response.status);
         return { authorized: false };
       } catch (error) {
-        console.error('[ASSA] Error checking auth status:', error);
+        log('Error checking auth status:', String(error));
         return { authorized: false };
       }
     }
 
     // No pending auth - try to execute a simple tool to check if we're authorized
+    log('No pendingAuthId - trying tool execution to verify auth');
     try {
       // Try to look up a known user as a test - if auth fails, we'll get an error
-      await executeTool('X.LookupSingleUserByUsername', { username: 'x' });
+      const result = await executeTool('X.LookupSingleUserByUsername', { username: 'x' });
+      log('Tool execution succeeded, user is authorized. Result:', result);
       return { authorized: true };
     } catch (error) {
-      console.error('[ASSA] Auth check via tool failed:', error);
+      log('Auth check via tool failed:', String(error));
       return { authorized: false };
     }
   },
 
   async initiateAuth() {
+    log('======== initiateAuth called ========');
+    log('Previous pendingAuthId was:', pendingAuthId);
+
+    // Use tool-based authorization (like the working Python example)
+    // This lets Arcade determine the required scopes automatically
     const response = await arcadeRequest<{
       id: string;
       url: string;
       status: string;
-    }>('POST', '/auth/authorize', {
+    }>('POST', '/tools/authorize', {
+      tool_name: 'X.SearchRecentTweetsByUsername',
       user_id: ARCADE_USER_ID,
-      auth_requirement: {
-        provider_type: 'x',
-        oauth2: {
-          scopes: ['tweet.read', 'tweet.write', 'users.read'],
-        },
-      },
     });
 
-    console.error(`[ASSA] Auth initiate response:`, response);
+    log('Auth initiate response:', response);
 
     // Store the auth ID for status polling
     pendingAuthId = response.id;
+    log('New pendingAuthId set to:', pendingAuthId);
 
     return {
       oauthUrl: response.url,
@@ -169,13 +219,16 @@ const realArcadeClient: ArcadeClient = {
 
   async getMentions({ limit }) {
     // Arcade doesn't have a direct "get mentions" tool
-    // We need to search for tweets mentioning the user
-    // First, we'd need to know the user's handle
-    // For now, search for tweets mentioning common patterns
+    // We search for tweets mentioning @username using SearchRecentTweetsByKeywords
 
-    // NOTE: This is a workaround. In a real implementation, you'd:
-    // 1. Store the authenticated user's handle after auth
-    // 2. Search for @handle mentions
+    if (!authenticatedUsername) {
+      console.error('[ASSA] No authenticated username stored - cannot search for mentions');
+      console.error('[ASSA] User needs to re-authenticate to fetch mentions');
+      return [];
+    }
+
+    const searchHandle = `@${authenticatedUsername}`;
+    console.error(`[ASSA] Searching for mentions of ${searchHandle}`);
 
     try {
       const response = await executeTool<{
@@ -191,7 +244,7 @@ const realArcadeClient: ArcadeClient = {
           };
         }>;
       }>('X.SearchRecentTweetsByKeywords', {
-        keywords: ['@'], // This won't work well - need user's actual handle
+        phrases: [searchHandle], // Search for @username mentions
         max_results: Math.min(limit, 100),
       });
 

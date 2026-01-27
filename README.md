@@ -50,10 +50,13 @@ extensions:
     command: node
     args: ["/path/to/assa-mcp/dist/index.js"]
     env:
-      ARCADE_API_KEY: your_api_key_here  # <-- Required!
+      ARCADE_API_KEY: your_api_key_here      # <-- Required!
+      ARCADE_USER_ID: you@example.com        # <-- Required! Your Arcade account email
 ```
 
-**Important:** The `env.ARCADE_API_KEY` is required. Get yours at [arcade.dev](https://arcade.dev).
+**Important:**
+- `ARCADE_API_KEY` - Required. Get yours at [arcade.dev](https://arcade.dev)
+- `ARCADE_USER_ID` - Required. Must match the email address of your Arcade account. This is used to link OAuth authorizations to your account.
 
 #### Alternative: CLI setup
 ```bash

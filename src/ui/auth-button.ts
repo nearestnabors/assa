@@ -98,7 +98,7 @@ export function createAuthButtonUI(params: AuthButtonParams): string {
 <body>
   <div class="auth-container">
     <!-- Step 1: Connect button -->
-    <button id="connectBtn" class="btn btn-connect">
+    <button id="connectBtn" class="btn btn-connect" data-auth-url='${authUrl}'>
       <span>🔗</span>
       <span>Connect ${escapeHtml(service)}</span>
     </button>
@@ -117,8 +117,8 @@ export function createAuthButtonUI(params: AuthButtonParams): string {
     const checkBtn = document.getElementById('checkBtn');
     const statusText = document.getElementById('statusText');
 
-    const authUrl = ${JSON.stringify(authUrl)};
-    const service = ${JSON.stringify(service)};
+    // Get URL from data attribute to avoid any JS escaping issues
+    const authUrl = connectBtn.dataset.authUrl;
 
     // Step 1: User clicks Connect - open OAuth URL
     connectBtn.addEventListener('click', () => {
@@ -134,15 +134,13 @@ export function createAuthButtonUI(params: AuthButtonParams): string {
       statusText.textContent = 'Complete authorization in the browser, then click above';
     });
 
-    // Step 2: User confirms they authorized - call tool to check status
+    // Step 2: User confirms they authorized - use prompt to trigger status check
     checkBtn.addEventListener('click', () => {
-      // Call the twitter_auth_status tool to verify auth completed
-      // The server will check with Arcade and return appropriate response
+      // Use 'prompt' action (supported by Goose) to ask agent to check auth
       window.parent.postMessage({
-        type: 'tool',
+        type: 'prompt',
         payload: {
-          name: 'twitter_auth_status',
-          arguments: {}
+          prompt: 'Check my Twitter authorization status now.'
         }
       }, '*');
 
