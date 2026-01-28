@@ -8,12 +8,18 @@ importers:
 
   .:
     dependencies:
+      '@arcadeai/arcadejs':
+        specifier: ^2.1.0
+        version: 2.1.0
       '@mcp-ui/server':
         specifier: ^5.0.0
         version: 5.16.3(hono@4.11.5)(zod@3.25.76)
       '@modelcontextprotocol/sdk':
         specifier: ^1.0.0
         version: 1.25.3(hono@4.11.5)(zod@3.25.76)
+      dotenv:
+        specifier: ^17.2.3
+        version: 17.2.3
       zod:
         specifier: ^3.23.0
         version: 3.25.76
@@ -29,6 +35,10 @@ importers:
         version: 5.9.3
 
 packages:
+
+  '@arcadeai/arcadejs@2.1.0':
+    resolution: {integrity: sha512-gRk/hwIOOzk9IBWNYGl/7z72N5yLIH0gDlUwCcazQrVUStgiE6w9TZLA10F6x8UHJQY8TYGOijenbdHh1vWlFA==}
+    hasBin: true
 
   '@esbuild/aix-ppc64@0.27.2':
     resolution: {integrity: sha512-GZMB+a0mOMZs4MpDbj8RJp4cw+w1WV5NYD6xzgvzUJ5Ek2jerwfO2eADyI6ExDSUED+1X8aMbegahsJi+8mgpw==}
@@ -369,6 +379,10 @@ packages:
     resolution: {integrity: sha512-g7nH6P6dyDioJogAAGprGpCtVImJhpPk/roCzdb3fIh61/s/nPsfR6onyMwkCAR/OlC3yBC0lESvUoQEAssIrw==}
     engines: {node: '>= 0.8'}
 
+  dotenv@17.2.3:
+    resolution: {integrity: sha512-JVUnt+DUIzu87TABbhPmNfVdBDt18BLOWjMUFJMSi/Qqg7NTYtabbvSNJGOJ7afbRuv9D/lngizHtP7QyLQ+9w==}
+    engines: {node: '>=12'}
+
   dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
     engines: {node: '>= 0.4'}
@@ -683,6 +697,8 @@ packages:
 
 snapshots:
 
+  '@arcadeai/arcadejs@2.1.0': {}
+
   '@esbuild/aix-ppc64@0.27.2':
     optional: true
 
@@ -940,6 +956,8 @@ snapshots:
       ms: 2.1.3
 
   depd@2.0.0: {}
+
+  dotenv@17.2.3: {}
 
   dunder-proto@1.0.1:
     dependencies:

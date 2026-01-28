@@ -137,10 +137,11 @@ export function createAuthButtonUI(params: AuthButtonParams): string {
     // Step 2: User confirms they authorized - use prompt to trigger status check
     checkBtn.addEventListener('click', () => {
       // Use 'prompt' action (supported by Goose) to ask agent to check auth
+      // Make prompt explicit so LLM actually calls the tool instead of assuming success
       window.parent.postMessage({
         type: 'prompt',
         payload: {
-          prompt: 'Check my Twitter authorization status now.'
+          prompt: 'I just completed ${escapeHtml(service)} OAuth in my browser. Use the ${escapeHtml(service).toLowerCase()}_auth_status tool to verify it worked.'
         }
       }, '*');
 

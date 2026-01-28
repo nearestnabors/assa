@@ -2,6 +2,23 @@
  * Time utility functions
  */
 
+// Twitter snowflake epoch (Nov 4, 2010 01:42:54.657 UTC)
+const TWITTER_EPOCH = 1288834974657n;
+
+/**
+ * Extract timestamp from a Twitter snowflake ID
+ * Twitter IDs contain the timestamp in the high bits
+ */
+export function timestampFromSnowflake(snowflakeId: string): Date | null {
+  try {
+    const id = BigInt(snowflakeId);
+    const timestampMs = Number((id >> 22n) + TWITTER_EPOCH);
+    return new Date(timestampMs);
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Format a timestamp as relative time (e.g., "2h ago", "3d ago")
  */

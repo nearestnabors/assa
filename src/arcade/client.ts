@@ -8,9 +8,10 @@
  * - Tools: POST /tools/execute with tool_name like "X.PostTweet"
  */
 
-import { appendFileSync } from 'fs';
+import { appendFileSync, readFileSync, writeFileSync, existsSync } from 'fs';
 import type { Mention } from '../ui/mention-card.js';
 import type { DM } from '../ui/dm-card.js';
+import { setUsername as setPersistentUsername } from '../state/manager.js';
 
 // Debug logger that writes to a file we can tail
 const LOG_FILE = '/tmp/assa-debug.log';
@@ -23,6 +24,37 @@ function log(message: string, data?: unknown) {
   console.error(line.trim()); // Also keep stderr for good measure
 }
 
+// Persist auth state to survive server restarts
+const AUTH_STATE_FILE = '/tmp/assa-auth-state.json';
+
+interface AuthState {
+  pendingAuthId: string | null;
+  authenticatedUsername: string | null;
+}
+
+function loadAuthState(): AuthState {
+  try {
+    if (existsSync(AUTH_STATE_FILE)) {
+      const data = readFileSync(AUTH_STATE_FILE, 'utf-8');
+      const state = JSON.parse(data) as AuthState;
+      log('Loaded auth state from file:', state);
+      return state;
+    }
+  } catch (error) {
+    log('Error loading auth state:', String(error));
+  }
+  return { pendingAuthId: null, authenticatedUsername: null };
+}
+
+function saveAuthState(state: AuthState) {
+  try {
+    writeFileSync(AUTH_STATE_FILE, JSON.stringify(state, null, 2));
+    log('Saved auth state to file:', state);
+  } catch (error) {
+    log('Error saving auth state:', String(error));
+  }
+}
+
 const ARCADE_API_KEY = process.env.ARCADE_API_KEY;
 const ARCADE_BASE_URL = process.env.ARCADE_BASE_URL || 'https://api.arcade.dev/v1';
 
@@ -30,16 +62,40 @@ const ARCADE_BASE_URL = process.env.ARCADE_BASE_URL || 'https://api.arcade.dev/v
 // In production, you'd want to persist this per-user
 const ARCADE_USER_ID = process.env.ARCADE_USER_ID || 'assa-default-user';
 
-// Store the pending auth ID for status polling
-let pendingAuthId: string | null = null;
+// Load persisted auth state on startup
+const initialState = loadAuthState();
+let pendingAuthId: string | null = initialState.pendingAuthId;
+let authenticatedUsername: string | null = initialState.authenticatedUsername;
 
-// Store the authenticated user's username for mentions search
-let authenticatedUsername: string | null = null;
+/**
+ * Set the authenticated username (for when Arcade doesn't provide it)
+ */
+export function setAuthenticatedUsername(username: string) {
+  authenticatedUsername = username;
+  saveAuthState({ pendingAuthId, authenticatedUsername });
+  log('Username set manually:', username);
+}
+
+interface WhoAmIUserData {
+  id: string;
+  username: string;
+  name: string;
+  description?: string;
+  profile_image_url?: string;
+  url?: string;
+}
+
+interface WhoAmIResponse {
+  value: {
+    data: WhoAmIUserData;
+  };
+}
 
 interface ArcadeClient {
   // Auth
   getAuthStatus(): Promise<{ authorized: boolean; username?: string }>;
-  initiateAuth(): Promise<{ oauthUrl: string; state: string }>;
+  initiateAuth(): Promise<{ oauthUrl: string; state: string; alreadyAuthorized?: boolean }>;
+  getAuthenticatedUser(): Promise<WhoAmIResponse | null>;
 
   // Twitter API
   getMentions(params: { hours: number; limit: number }): Promise<Mention[]>;
@@ -158,14 +214,27 @@ const realArcadeClient: ArcadeClient = {
         log('Auth status response:', response);
 
         if (response.status === 'completed') {
-          const username = response.context?.user_info?.username;
-          log('Auth COMPLETED! username:', username);
+          log('Auth COMPLETED! Fetching user info via X.WhoAmI...');
           pendingAuthId = null; // Clear pending auth
-          if (username) {
-            authenticatedUsername = username; // Store for mentions search
-            log('Stored authenticated username:', `@${username}`);
+
+          // Use X.WhoAmI to get the authenticated username
+          try {
+            const whoami = await executeTool<WhoAmIResponse>('X.WhoAmI', {});
+            log('X.WhoAmI after auth:', whoami);
+            const username = whoami.value?.data?.username;
+            if (username) {
+              authenticatedUsername = username;
+              setPersistentUsername(username); // Sync to persistent state
+              log('Stored authenticated username from WhoAmI:', `@${username}`);
+            }
+            saveAuthState({ pendingAuthId, authenticatedUsername });
+            return { authorized: true, username };
+          } catch (whoamiError) {
+            log('X.WhoAmI failed after auth:', String(whoamiError));
+            // Auth succeeded but couldn't get username - still authorized
+            saveAuthState({ pendingAuthId, authenticatedUsername });
+            return { authorized: true };
           }
-          return { authorized: true, username };
         }
 
         // Still pending
@@ -177,16 +246,65 @@ const realArcadeClient: ArcadeClient = {
       }
     }
 
-    // No pending auth - try to execute a simple tool to check if we're authorized
-    log('No pendingAuthId - trying tool execution to verify auth');
+    // No pending auth - check if we're authorized
+    // If we already have a cached username, use a simple tool call to verify auth
+    // Only call X.WhoAmI if we need to fetch the username
+    if (authenticatedUsername) {
+      log('Have cached username, verifying auth with simple tool call');
+      try {
+        // Quick auth check - if this succeeds, we're still authorized
+        await executeTool('X.LookupSingleUserByUsername', { username: 'x' });
+        log('Auth verified, using cached username:', `@${authenticatedUsername}`);
+        return { authorized: true, username: authenticatedUsername };
+      } catch (error) {
+        log('Auth check failed, clearing cached username:', String(error));
+        authenticatedUsername = null;
+        saveAuthState({ pendingAuthId, authenticatedUsername });
+        return { authorized: false };
+      }
+    }
+
+    // No cached username - try X.WhoAmI to verify auth and get username
+    log('No cached username - calling X.WhoAmI to verify auth and get username');
     try {
-      // Try to look up a known user as a test - if auth fails, we'll get an error
-      const result = await executeTool('X.LookupSingleUserByUsername', { username: 'x' });
-      log('Tool execution succeeded, user is authorized. Result:', result);
-      return { authorized: true };
+      const whoami = await executeTool<WhoAmIResponse>('X.WhoAmI', {});
+      log('X.WhoAmI succeeded:', whoami);
+
+      // Store the username from WhoAmI
+      const username = whoami.value?.data?.username;
+      if (username) {
+        authenticatedUsername = username;
+        setPersistentUsername(username); // Sync to persistent state
+        saveAuthState({ pendingAuthId, authenticatedUsername });
+        log('Stored username from WhoAmI:', `@${username}`);
+      }
+
+      return { authorized: true, username };
     } catch (error) {
-      log('Auth check via tool failed:', String(error));
+      log('X.WhoAmI failed:', String(error));
+      // Not authorized or tool failed
       return { authorized: false };
+    }
+  },
+
+  async getAuthenticatedUser() {
+    log('======== getAuthenticatedUser called ========');
+    try {
+      const whoami = await executeTool<WhoAmIResponse>('X.WhoAmI', {});
+      log('X.WhoAmI response:', whoami);
+
+      // Store the username
+      const username = whoami.value?.data?.username;
+      if (username) {
+        authenticatedUsername = username;
+        setPersistentUsername(username); // Sync to persistent state
+        saveAuthState({ pendingAuthId, authenticatedUsername });
+      }
+
+      return whoami;
+    } catch (error) {
+      log('X.WhoAmI failed:', String(error));
+      return null;
     }
   },
 
@@ -198,7 +316,7 @@ const realArcadeClient: ArcadeClient = {
     // This lets Arcade determine the required scopes automatically
     const response = await arcadeRequest<{
       id: string;
-      url: string;
+      url?: string;
       status: string;
     }>('POST', '/tools/authorize', {
       tool_name: 'X.SearchRecentTweetsByUsername',
@@ -207,12 +325,29 @@ const realArcadeClient: ArcadeClient = {
 
     log('Auth initiate response:', response);
 
+    // If already authorized, the response won't have a URL
+    if (response.status === 'completed') {
+      log('User is already authorized! No OAuth URL needed.');
+      // Clear any stale pending auth
+      pendingAuthId = null;
+      saveAuthState({ pendingAuthId, authenticatedUsername });
+      // Return empty URL to signal already authorized
+      return {
+        oauthUrl: '',
+        state: response.id,
+        alreadyAuthorized: true,
+      };
+    }
+
     // Store the auth ID for status polling
     pendingAuthId = response.id;
     log('New pendingAuthId set to:', pendingAuthId);
 
+    // Persist the pending auth ID
+    saveAuthState({ pendingAuthId, authenticatedUsername });
+
     return {
-      oauthUrl: response.url,
+      oauthUrl: response.url || '',
       state: response.id, // Use auth ID as state
     };
   },
@@ -231,40 +366,63 @@ const realArcadeClient: ArcadeClient = {
     console.error(`[ASSA] Searching for mentions of ${searchHandle}`);
 
     try {
+      // Response structure: { value: { data: [...], includes: { users: [...] } } }
       const response = await executeTool<{
-        tweets?: Array<{
-          id: string;
-          text: string;
-          author_id?: string;
-          created_at?: string;
-          public_metrics?: {
-            like_count?: number;
-            retweet_count?: number;
-            reply_count?: number;
+        value: {
+          data?: Array<{
+            id: string;
+            text: string;
+            author_id?: string;
+            author_name?: string;
+            author_username?: string;
+            created_at?: string;
+            tweet_url?: string;
+          }>;
+          includes?: {
+            users?: Array<{
+              id: string;
+              name: string;
+              username: string;
+            }>;
           };
-        }>;
+        };
       }>('X.SearchRecentTweetsByKeywords', {
         phrases: [searchHandle], // Search for @username mentions
         max_results: Math.min(limit, 100),
       });
 
+      const tweets = response.value?.data || [];
+      const users = response.value?.includes?.users || [];
+
+      // Create a map of user_id -> user info for lookups
+      const userMap = new Map(users.map((u) => [u.id, u]));
+
+      console.error(`[ASSA] Found ${tweets.length} tweets mentioning ${searchHandle}`);
+
       // Transform to Mention format
-      return (response.tweets || []).map((tweet) => ({
-        id: tweet.id,
-        author: {
-          handle: tweet.author_id || 'unknown',
-          displayName: tweet.author_id || 'Unknown User',
-          avatarUrl: '',
-        },
-        text: tweet.text,
-        timestamp: tweet.created_at || new Date().toISOString(),
-        metrics: {
-          likes: tweet.public_metrics?.like_count || 0,
-          retweets: tweet.public_metrics?.retweet_count || 0,
-          replies: tweet.public_metrics?.reply_count || 0,
-        },
-        url: `https://twitter.com/i/status/${tweet.id}`,
-      }));
+      return tweets.map((tweet) => {
+        // Look up user info from includes, or use inline author info
+        const user = tweet.author_id ? userMap.get(tweet.author_id) : null;
+        const handle = tweet.author_username || user?.username || 'unknown';
+        const displayName = tweet.author_name || user?.name || handle;
+
+        return {
+          id: tweet.id,
+          author: {
+            handle,
+            displayName,
+            avatarUrl: '',
+          },
+          text: tweet.text,
+          timestamp: tweet.created_at || new Date().toISOString(),
+          metrics: {
+            likes: 0,
+            retweets: 0,
+            replies: 0,
+          },
+          url: tweet.tweet_url || `https://twitter.com/i/status/${tweet.id}`,
+        };
+      });
     } catch (error) {
       console.error('[ASSA] Error getting mentions:', error);
       return [];
@@ -342,6 +500,23 @@ const mockArcadeClient: ArcadeClient = {
       oauthUrl: `https://arcade.dev/oauth/twitter?state=${state}`,
       state,
     };
+  },
+
+  async getAuthenticatedUser() {
+    if (mockAuthState.authorized) {
+      return {
+        value: {
+          data: {
+            id: '12345',
+            username: mockAuthState.username || 'demo_user',
+            name: 'Demo User',
+            description: 'A demo user for testing',
+            profile_image_url: 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png',
+          },
+        },
+      };
+    }
+    return null;
   },
 
   async getMentions({ limit }) {
