@@ -127,7 +127,6 @@ export function createConversationListUI(params: ConversationListParams): string
     .header h2 {
       font-size: 18px;
       font-weight: 600;
-      color: #0f172a;
     }
 
     .header .badge {
@@ -327,7 +326,7 @@ export function createConversationListUI(params: ConversationListParams): string
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="container" id="conversations-container">
     <div class="header">
       <h2>Your Conversations</h2>
       <span class="badge ${count === 0 ? 'empty' : ''}">${count === 0 ? 'All clear' : `${count} awaiting`}</span>
@@ -382,16 +381,19 @@ export function createConversationListUI(params: ConversationListParams): string
       }, '*');
     }
 
-    // ResizeObserver for iframe height
+    // ResizeObserver for iframe height — observe the container, not body.
+    // Body stretches to fill the iframe viewport, which prevents shrinking.
+    const container = document.getElementById('conversations-container');
     const resizeObserver = new ResizeObserver((entries) => {
       entries.forEach((entry) => {
+        // Add body padding (16px top + 16px bottom)
         window.parent.postMessage({
           type: 'ui-size-change',
           payload: { height: entry.contentRect.height + 32 }
         }, '*');
       });
     });
-    resizeObserver.observe(document.body);
+    if (container) resizeObserver.observe(container);
   </script>
 </body>
 </html>
