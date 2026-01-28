@@ -1,7 +1,9 @@
 /**
  * ASSA MCP Server Setup
- * 
+ *
  * Registers all tools and handles MCP protocol communication.
+ *
+ * Platform: Twitter/X via Arcade.dev
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -12,72 +14,22 @@ import {
   type CallToolResult,
 } from '@modelcontextprotocol/sdk/types.js';
 
-// Import tools (to be implemented)
+// Twitter tools
 import { twitterAuthStatus } from './tools/auth-status.js';
-import { twitterGetMentions } from './tools/get-mentions.js';
-import { twitterGetDMs } from './tools/get-dms.js';
-import { twitterDailyDigest } from './tools/daily-digest.js';
 import { twitterDraftTweet } from './tools/draft-tweet.js';
 import { twitterPostTweet } from './tools/post-tweet.js';
+import { twitterConversations } from './tools/conversations.js';
+import { twitterDismissConversation } from './tools/dismiss-conversation.js';
 
 // Tool definitions for MCP
 const TOOLS: Tool[] = [
+  // === Twitter/X Tools ===
   {
     name: 'twitter_auth_status',
-    description: 'Check if Twitter is authenticated. Returns an auth button UI if not connected.',
+    description: 'Check if Twitter/X is authenticated via Arcade. Returns an auth button UI if not connected.',
     inputSchema: {
       type: 'object',
       properties: {},
-      required: [],
-    },
-  },
-  {
-    name: 'twitter_get_mentions',
-    description: 'Fetch recent Twitter mentions with rich UI cards showing avatars, text, and engagement.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        hours: {
-          type: 'number',
-          description: 'Lookback period in hours (default: 24)',
-        },
-        limit: {
-          type: 'number',
-          description: 'Maximum number of mentions to return (default: 50)',
-        },
-      },
-      required: [],
-    },
-  },
-  {
-    name: 'twitter_get_dms',
-    description: 'Fetch unread Twitter DMs with preview cards.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        unread_only: {
-          type: 'boolean',
-          description: 'Only return unread DMs (default: true)',
-        },
-        limit: {
-          type: 'number',
-          description: 'Maximum number of DMs to return (default: 20)',
-        },
-      },
-      required: [],
-    },
-  },
-  {
-    name: 'twitter_daily_digest',
-    description: 'Get a combined digest of Twitter mentions and DMs with AI-friendly summary.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        hours: {
-          type: 'number',
-          description: 'Lookback period in hours (default: 24)',
-        },
-      },
       required: [],
     },
   },
@@ -105,7 +57,7 @@ const TOOLS: Tool[] = [
   },
   {
     name: 'twitter_post_tweet',
-    description: 'Post a tweet. Usually called from the draft preview UI after user approval.',
+    description: 'Post a tweet to X/Twitter. Usually called from the draft preview UI after user approval.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -125,17 +77,44 @@ const TOOLS: Tool[] = [
       required: ['text'],
     },
   },
+  {
+    name: 'twitter_conversations',
+    description: 'Show Twitter conversations awaiting your reply. Displays mentions that you have not yet responded to.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: 'twitter_dismiss_conversation',
+    description: 'Dismiss a conversation from the list. It will reappear if there is new activity (new replies).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tweet_id: {
+          type: 'string',
+          description: 'The tweet ID to dismiss',
+        },
+        reply_count: {
+          type: 'number',
+          description: 'Current reply count (used to detect new activity)',
+        },
+      },
+      required: ['tweet_id', 'reply_count'],
+    },
+  },
+
 ];
 
 // Tool handler dispatch
 type ToolHandler = (args: Record<string, unknown>) => Promise<unknown>;
 const toolHandlers: Record<string, ToolHandler> = {
   twitter_auth_status: twitterAuthStatus,
-  twitter_get_mentions: twitterGetMentions,
-  twitter_get_dms: twitterGetDMs,
-  twitter_daily_digest: twitterDailyDigest,
   twitter_draft_tweet: twitterDraftTweet,
   twitter_post_tweet: twitterPostTweet,
+  twitter_conversations: twitterConversations,
+  twitter_dismiss_conversation: twitterDismissConversation,
 };
 
 export function createServer(): Server {
