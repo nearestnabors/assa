@@ -57,19 +57,27 @@ export function createConversationListUI(params: ConversationListParams): string
             <p class="text">${escapeHtml(truncatedText)}</p>
           </div>
         </div>
-        <div class="actions">
-          <button
-            class="action-btn dismiss"
-            onclick="dismissConversation('${escapeHtml(conv.tweet_id)}', ${conv.reply_count})"
-          >
-            Dismiss
-          </button>
-          <button
-            class="action-btn reply"
-            onclick="replyToConversation('${escapeHtml(conv.author_username)}', '${escapeHtml(conv.tweet_id)}', ${JSON.stringify(conv.text).replace(/'/g, "\\'")})"
-          >
-            Reply
-          </button>
+        <div class="reply-box">
+          <textarea
+            class="reply-input"
+            id="reply-${escapeHtml(conv.tweet_id)}"
+            placeholder="Write your reply..."
+            maxlength="280"
+          ></textarea>
+          <div class="reply-actions">
+            <button
+              class="action-btn dismiss"
+              onclick="dismissConversation('${escapeHtml(conv.tweet_id)}', ${conv.reply_count})"
+            >
+              Dismiss
+            </button>
+            <button
+              class="action-btn reply"
+              onclick="sendReply('${escapeHtml(conv.author_username)}', '${escapeHtml(conv.tweet_id)}')"
+            >
+              Reply
+            </button>
+          </div>
         </div>
       </div>
     `;
@@ -202,6 +210,39 @@ export function createConversationListUI(params: ConversationListParams): string
       word-wrap: break-word;
     }
 
+    .reply-box {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #f1f5f9;
+    }
+
+    .reply-input {
+      width: 100%;
+      min-height: 60px;
+      padding: 10px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      resize: vertical;
+      margin-bottom: 8px;
+    }
+
+    .reply-input:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    }
+
+    .reply-input::placeholder {
+      color: #94a3b8;
+    }
+
+    .reply-actions {
+      display: flex;
+      gap: 8px;
+    }
+
     .actions {
       display: flex;
       gap: 8px;
@@ -303,22 +344,31 @@ export function createConversationListUI(params: ConversationListParams): string
     const username = ${JSON.stringify(username)};
 
     function dismissConversation(tweetId, replyCount) {
+      // Use prompt since Goose doesn't support 'tool' action yet
       window.parent.postMessage({
         type: 'prompt',
         payload: {
-          prompt: 'Dismiss this Twitter conversation (tweet ID: ' + tweetId + ', reply count: ' + replyCount + ') using the twitter_dismiss_conversation tool, then refresh my conversations.'
+          prompt: 'Dismiss tweet ' + tweetId + ' (reply_count: ' + replyCount + ')'
         }
       }, '*');
     }
 
-    function replyToConversation(authorHandle, tweetId, tweetText) {
-      // Truncate text for the prompt
-      const shortText = tweetText.length > 100 ? tweetText.slice(0, 100) + '...' : tweetText;
+    function sendReply(authorHandle, tweetId) {
+      const textarea = document.getElementById('reply-' + tweetId);
+      const replyText = textarea ? textarea.value.trim() : '';
 
+      if (!replyText) {
+        textarea.focus();
+        textarea.style.borderColor = '#ef4444';
+        setTimeout(() => { textarea.style.borderColor = ''; }, 2000);
+        return;
+      }
+
+      // Use prompt since Goose doesn't support 'tool' action yet
       window.parent.postMessage({
         type: 'prompt',
         payload: {
-          prompt: 'Draft a reply to @' + authorHandle + "'s tweet (ID: " + tweetId + "): \\"" + shortText + "\\"\\n\\nPlease help me compose a thoughtful reply."
+          prompt: 'Draft reply to tweet ' + tweetId + ': ' + replyText
         }
       }, '*');
     }

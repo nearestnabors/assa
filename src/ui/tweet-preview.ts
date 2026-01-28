@@ -27,14 +27,14 @@ export function createTweetPreviewUI(draft: TweetDraft): string {
   
   const replyContextHtml = draft.replyTo ? `
     <div class="reply-context">
-      <span class="reply-label">Replying to @${escapeHtml(draft.replyTo.author)}</span>
-      <p class="reply-text">${escapeHtml(draft.replyTo.text.slice(0, 100))}...</p>
+      <span class="reply-label">Replying to @${escapeHtml(draft.replyTo.author || 'unknown')}</span>
+      ${draft.replyTo.text ? `<p class="reply-text">${escapeHtml(draft.replyTo.text.slice(0, 100))}...</p>` : ''}
     </div>
   ` : '';
-  
+
   const quoteContextHtml = draft.quoteTweet ? `
     <div class="quote-context">
-      <p class="quote-text">@${escapeHtml(draft.quoteTweet.author)}: ${escapeHtml(draft.quoteTweet.text.slice(0, 80))}...</p>
+      <p class="quote-text">@${escapeHtml(draft.quoteTweet.author || 'unknown')}: ${draft.quoteTweet.text ? escapeHtml(draft.quoteTweet.text.slice(0, 80)) + '...' : ''}</p>
     </div>
   ` : '';
   

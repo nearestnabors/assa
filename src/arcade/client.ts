@@ -313,13 +313,13 @@ const realArcadeClient: ArcadeClient = {
     log('Previous pendingAuthId was:', pendingAuthId);
 
     // Use tool-based authorization (like the working Python example)
-    // This lets Arcade determine the required scopes automatically
+    // Authorize for PostTweet to get write scopes (includes read scopes too)
     const response = await arcadeRequest<{
       id: string;
       url?: string;
       status: string;
     }>('POST', '/tools/authorize', {
-      tool_name: 'X.SearchRecentTweetsByUsername',
+      tool_name: 'X.PostTweet',
       user_id: ARCADE_USER_ID,
     });
 
