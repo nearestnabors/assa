@@ -33,9 +33,7 @@ export function createConversationListUI(params: ConversationListParams): string
   const cardsHtml = conversations
     .map((conv, index) => {
       const relativeTime = formatRelativeTime(conv.created_at);
-      const avatarUrl =
-        conv.author_avatar_url ||
-        'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png';
+      const avatarUrl = `https://unavatar.io/x/${encodeURIComponent(conv.author_username)}`;
       const truncatedText =
         conv.text.length > 200 ? conv.text.slice(0, 200) + '...' : conv.text;
 
