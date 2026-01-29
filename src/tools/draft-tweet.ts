@@ -1,9 +1,9 @@
 /**
- * Twitter Draft Tweet Tool
+ * X Draft Tweet Tool
  *
  * Creates a draft tweet and returns data for the preview UI.
  * Does NOT post the tweet - that happens when user clicks Post in the UI,
- * which calls twitter_post_tweet directly via MCP Apps.
+ * which calls x_post_tweet directly via MCP Apps.
  */
 
 import { arcadeClient } from '../arcade/client.js';
@@ -15,7 +15,7 @@ interface DraftTweetArgs {
   quote_tweet_id?: string;
 }
 
-export async function twitterDraftTweet(
+export async function xDraftTweet(
   args: Record<string, unknown>
 ): Promise<unknown> {
   const { text, reply_to_id, quote_tweet_id } = args as unknown as DraftTweetArgs;

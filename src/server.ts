@@ -4,7 +4,7 @@
  * Registers all tools with MCP Apps UI resources.
  * Uses @modelcontextprotocol/ext-apps for rich UI components.
  *
- * Platform: Twitter/X via Arcade.dev
+ * Platform: X via Arcade.dev
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -21,12 +21,12 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 
-// Twitter tools
-import { twitterAuthStatus } from './tools/auth-status.js';
-import { twitterDraftTweet } from './tools/draft-tweet.js';
-import { twitterPostTweet } from './tools/post-tweet.js';
-import { twitterConversations } from './tools/conversations.js';
-import { twitterDismissConversation } from './tools/dismiss-conversation.js';
+// X tools
+import { xAuthStatus } from './tools/auth-status.js';
+import { xDraftTweet } from './tools/draft-tweet.js';
+import { xPostTweet } from './tools/post-tweet.js';
+import { xConversations } from './tools/conversations.js';
+import { xDismissConversation } from './tools/dismiss-conversation.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -40,10 +40,10 @@ const UI_RESOURCES = {
 
 // Tool definitions for MCP with UI metadata
 const TOOLS: Tool[] = [
-  // === Twitter/X Tools ===
+  // === X Tools ===
   {
-    name: 'twitter_auth_status',
-    description: 'Check if Twitter/X is authenticated via Arcade. Returns an auth button UI if not connected.',
+    name: 'x_auth_status',
+    description: 'Check if X is authenticated via Arcade. Returns an auth button UI if not connected.',
     inputSchema: {
       type: 'object',
       properties: {},
@@ -57,7 +57,7 @@ const TOOLS: Tool[] = [
     },
   },
   {
-    name: 'twitter_draft_tweet',
+    name: 'x_draft_tweet',
     description: 'Create a draft tweet and show a preview UI for approval before posting.',
     inputSchema: {
       type: 'object',
@@ -85,8 +85,8 @@ const TOOLS: Tool[] = [
     },
   },
   {
-    name: 'twitter_post_tweet',
-    description: 'Post a tweet to X/Twitter. Usually called from the draft preview UI after user approval.',
+    name: 'x_post_tweet',
+    description: 'Post a tweet to X. Usually called from the draft preview UI after user approval.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -108,8 +108,8 @@ const TOOLS: Tool[] = [
     // No UI - this is a data-only tool called from tweet-preview UI
   },
   {
-    name: 'twitter_conversations',
-    description: 'Show Twitter conversations awaiting your reply. Displays mentions that you have not yet responded to.',
+    name: 'x_conversations',
+    description: 'Show X conversations awaiting your reply. Displays mentions that you have not yet responded to.',
     inputSchema: {
       type: 'object',
       properties: {},
@@ -123,7 +123,7 @@ const TOOLS: Tool[] = [
     },
   },
   {
-    name: 'twitter_dismiss_conversation',
+    name: 'x_dismiss_conversation',
     description: 'Dismiss a conversation from the list. It will reappear if there is new activity (new replies).',
     inputSchema: {
       type: 'object',
@@ -146,11 +146,11 @@ const TOOLS: Tool[] = [
 // Tool handler dispatch
 type ToolHandler = (args: Record<string, unknown>) => Promise<unknown>;
 const toolHandlers: Record<string, ToolHandler> = {
-  twitter_auth_status: twitterAuthStatus,
-  twitter_draft_tweet: twitterDraftTweet,
-  twitter_post_tweet: twitterPostTweet,
-  twitter_conversations: twitterConversations,
-  twitter_dismiss_conversation: twitterDismissConversation,
+  x_auth_status: xAuthStatus,
+  x_draft_tweet: xDraftTweet,
+  x_post_tweet: xPostTweet,
+  x_conversations: xConversations,
+  x_dismiss_conversation: xDismissConversation,
 };
 
 // Load bundled UI HTML from dist/ui/{name}/ui-apps/{name}.html

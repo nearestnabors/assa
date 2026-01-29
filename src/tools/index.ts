@@ -2,9 +2,9 @@
  * Tool exports
  */
 
-// Twitter/X tools
-export { twitterAuthStatus } from './auth-status.js';
-export { twitterDraftTweet } from './draft-tweet.js';
-export { twitterPostTweet } from './post-tweet.js';
-export { twitterConversations } from './conversations.js';
-export { twitterDismissConversation } from './dismiss-conversation.js';
+// X tools
+export { xAuthStatus } from './auth-status.js';
+export { xDraftTweet } from './draft-tweet.js';
+export { xPostTweet } from './post-tweet.js';
+export { xConversations } from './conversations.js';
+export { xDismissConversation } from './dismiss-conversation.js';

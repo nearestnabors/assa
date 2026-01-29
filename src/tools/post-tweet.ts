@@ -1,5 +1,5 @@
 /**
- * Twitter Post Tweet Tool
+ * X Post Tweet Tool
  *
  * Actually posts the tweet. Usually called from TweetPreview UI after user approval.
  * Calls Arcade X API to post - the API handles character limit validation
@@ -15,7 +15,7 @@ interface PostTweetArgs {
   quote_tweet_id?: string;
 }
 
-export async function twitterPostTweet(
+export async function xPostTweet(
   args: Record<string, unknown>
 ): Promise<unknown> {
   const { text, reply_to_id, quote_tweet_id } = args as unknown as PostTweetArgs;

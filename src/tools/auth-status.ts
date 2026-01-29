@@ -1,14 +1,14 @@
 /**
- * Twitter Auth Status Tool
+ * X Auth Status Tool
  *
- * Checks if Twitter is authenticated via Arcade.
+ * Checks if X is authenticated via Arcade.
  * If authenticated, uses X.WhoAmI to get the username.
  * If not authenticated, returns auth data for the MCP Apps UI component.
  */
 
 import { arcadeClient } from '../arcade/client.js';
 
-export async function twitterAuthStatus(
+export async function xAuthStatus(
   _args: Record<string, unknown>
 ): Promise<unknown> {
   // Check with Arcade if we have a valid token (also fetches username via X.WhoAmI)
@@ -21,7 +21,7 @@ export async function twitterAuthStatus(
       content: [
         {
           type: 'text',
-          text: `✓ Twitter/X connected${usernameText}. You can now post, reply, and view your conversations.`,
+          text: `✓ X connected${usernameText}. You can now post, reply, and view your conversations.`,
         },
       ],
     };
@@ -36,7 +36,7 @@ export async function twitterAuthStatus(
       content: [
         {
           type: 'text',
-          text: `✓ Twitter/X connected. You can now post, reply, and view your conversations.`,
+          text: `✓ X connected. You can now post, reply, and view your conversations.`,
         },
       ],
     };
@@ -44,7 +44,7 @@ export async function twitterAuthStatus(
 
   // Need actual OAuth - return JSON data for the auth-button UI app
   const authData = {
-    service: 'Twitter',
+    service: 'X',
     authUrl: oauthUrl,
     state: state,
   };

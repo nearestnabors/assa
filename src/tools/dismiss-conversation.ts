@@ -6,10 +6,10 @@ interface DismissConversationArgs {
 }
 
 /**
- * Tool: twitter_dismiss_conversation
+ * Tool: x_dismiss_conversation
  * Dismisses a conversation (hides it from the list until new activity)
  */
-export async function twitterDismissConversation(
+export async function xDismissConversation(
   args: DismissConversationArgs
 ): Promise<unknown> {
   const { tweet_id, reply_count } = args;
@@ -36,7 +36,7 @@ export async function twitterDismissConversation(
     content: [
       {
         type: 'text',
-        text: `Conversation dismissed. It will reappear if there's new activity (new replies).\n\nUse twitter_conversations to see your remaining conversations.`,
+        text: `Conversation dismissed. It will reappear if there's new activity (new replies).\n\nUse x_conversations to see your remaining conversations.`,
       },
     ],
   };

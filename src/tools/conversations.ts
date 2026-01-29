@@ -1,5 +1,5 @@
 /**
- * Twitter Conversations Tool
+ * X Conversations Tool
  *
  * Fetches unreplied mentions and returns data for the conversation list UI.
  * Uses the shared Arcade client for API calls.
@@ -12,7 +12,6 @@ import {
   pruneExpiredDismissals,
   updateLastChecked,
 } from '../state/manager.js';
-import { getAvatars, pruneExpiredAvatars, pruneStaleAvatars } from '../state/avatar-cache.js';
 import { timestampFromSnowflake } from '../utils/time.js';
 import { executeTool, AuthRequiredError } from '../arcade/client.js';
 
@@ -80,15 +79,14 @@ interface ConversationItem {
 }
 
 /**
- * Tool: twitter_conversations
+ * Tool: x_conversations
  * Fetches unreplied mentions and returns data for the conversation list UI
  */
-export async function twitterConversations(): Promise<unknown> {
-  // Clean up expired entries
+export async function xConversations(): Promise<unknown> {
+  // Clean up expired dismissals
   const prunedDismissals = pruneExpiredDismissals();
-  const prunedAvatars = pruneExpiredAvatars();
-  if (prunedDismissals > 0 || prunedAvatars > 0) {
-    debugLog(`Pruned ${prunedDismissals} expired dismissals, ${prunedAvatars} expired avatars`);
+  if (prunedDismissals > 0) {
+    debugLog(`Pruned ${prunedDismissals} expired dismissals`);
   }
 
   const username = getUsername();
@@ -99,7 +97,7 @@ export async function twitterConversations(): Promise<unknown> {
       content: [
         {
           type: 'text',
-          text: `I need your Twitter username to find your conversations.\n\nPlease check your auth status with twitter_auth_status first - your username should be detected automatically after authentication.`,
+          text: `I need your X username to find your conversations.\n\nPlease check your auth status with x_auth_status first - your username should be detected automatically after authentication.`,
         },
       ],
     };
@@ -262,36 +260,11 @@ export async function twitterConversations(): Promise<unknown> {
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
 
-    // Fetch avatars for all unique users (uses cache or fetches from X)
-    const uniqueUsers = new Map<string, string | undefined>();
+    // Note: Avatar data URLs removed from response to keep payload small.
+    // UI uses initials fallback which works well and avoids CSP issues.
+    // Clear avatar URLs to ensure we don't send any image data
     for (const conv of conversations) {
-      if (!uniqueUsers.has(conv.author_username)) {
-        uniqueUsers.set(conv.author_username, conv.author_avatar_url);
-      }
-    }
-
-    const usersToFetch = Array.from(uniqueUsers.entries()).map(([username, url]) => ({
-      username,
-      profileImageUrl: url,
-    }));
-
-    debugLog(`Fetching avatars for ${usersToFetch.length} users`);
-    const avatarMap = await getAvatars(usersToFetch);
-    debugLog(`Got ${Object.keys(avatarMap).length} avatars`);
-
-    // Update conversations with cached data URLs
-    for (const conv of conversations) {
-      const dataUrl = avatarMap[conv.author_username.toLowerCase()];
-      if (dataUrl) {
-        conv.author_avatar_url = dataUrl;
-      }
-    }
-
-    // Prune avatars for users no longer in conversations
-    const activeUsernames = conversations.map((c) => c.author_username);
-    const prunedStale = pruneStaleAvatars(activeUsernames);
-    if (prunedStale > 0) {
-      debugLog(`Pruned ${prunedStale} stale avatars`);
+      delete conv.author_avatar_url;
     }
 
     // Update last checked timestamp
@@ -320,7 +293,7 @@ export async function twitterConversations(): Promise<unknown> {
         content: [
           {
             type: 'text',
-            text: `Twitter authorization required. Please use the twitter_auth_status tool to connect your account.`,
+            text: `X authorization required. Please use the x_auth_status tool to connect your account.`,
           },
         ],
         isError: true,
@@ -338,7 +311,7 @@ export async function twitterConversations(): Promise<unknown> {
         content: [
           {
             type: 'text',
-            text: `Twitter authorization required. Please use the twitter_auth_status tool to connect your account.`,
+            text: `X authorization required. Please use the x_auth_status tool to connect your account.`,
           },
         ],
         isError: true,
