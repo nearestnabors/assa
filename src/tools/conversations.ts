@@ -2,6 +2,7 @@
  * Twitter Conversations Tool
  *
  * Fetches unreplied mentions and returns data for the conversation list UI.
+ * Uses the shared Arcade client for API calls.
  */
 
 import { appendFileSync } from 'fs';
@@ -12,6 +13,7 @@ import {
   updateLastChecked,
 } from '../state/manager.js';
 import { timestampFromSnowflake } from '../utils/time.js';
+import { executeTool, AuthRequiredError } from '../arcade/client.js';
 
 const DEBUG_LOG = '/tmp/assa-conversations-debug.log';
 function debugLog(message: string, data?: unknown) {
@@ -24,68 +26,6 @@ function debugLog(message: string, data?: unknown) {
   } catch {
     // ignore write errors
   }
-}
-
-// Arcade API configuration
-const ARCADE_API_KEY = process.env.ARCADE_API_KEY;
-const ARCADE_BASE_URL = process.env.ARCADE_BASE_URL || 'https://api.arcade.dev/v1';
-const ARCADE_USER_ID = process.env.ARCADE_USER_ID || 'assa-default-user';
-
-/**
- * Make an authenticated request to the Arcade API
- */
-async function arcadeRequest<T>(
-  method: 'GET' | 'POST',
-  path: string,
-  body?: unknown
-): Promise<T> {
-  if (!ARCADE_API_KEY) {
-    throw new Error('ARCADE_API_KEY not configured');
-  }
-
-  const url = `${ARCADE_BASE_URL}${path}`;
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${ARCADE_API_KEY}`,
-    'Content-Type': 'application/json',
-  };
-
-  const response = await fetch(url, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  });
-
-  const responseText = await response.text();
-
-  if (!response.ok) {
-    throw new Error(`Arcade API error (${response.status}): ${responseText}`);
-  }
-
-  return JSON.parse(responseText) as T;
-}
-
-/**
- * Execute an Arcade tool
- */
-async function executeTool<T>(
-  toolName: string,
-  input: Record<string, unknown>
-): Promise<T> {
-  const response = await arcadeRequest<{
-    output?: T;
-    status: string;
-    error?: string;
-  }>('POST', '/tools/execute', {
-    tool_name: toolName,
-    input,
-    user_id: ARCADE_USER_ID,
-  });
-
-  if (response.error) {
-    throw new Error(`Tool ${toolName} failed: ${response.error}`);
-  }
-
-  return response.output as T;
 }
 
 interface Tweet {
@@ -342,9 +282,22 @@ export async function twitterConversations(): Promise<unknown> {
   } catch (error) {
     console.error('[ASSA] Error fetching conversations:', error);
 
+    // Check for auth errors using AuthRequiredError
+    if (error instanceof AuthRequiredError) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Twitter authorization required. Please use the twitter_auth_status tool to connect your account.`,
+          },
+        ],
+        isError: true,
+      };
+    }
+
     const errorMessage = error instanceof Error ? error.message : String(error);
 
-    // Check for auth errors
+    // Fallback check for auth-related error messages
     if (
       errorMessage.toLowerCase().includes('not authorized') ||
       errorMessage.toLowerCase().includes('unauthorized')

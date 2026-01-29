@@ -165,7 +165,7 @@ interface ArcadeClient {
  * Execute a tool and handle auth requirements
  * If auth is required, throws AuthRequiredError with the OAuth URL
  */
-async function executeTool<T>(toolName: string, input: Record<string, unknown>): Promise<T> {
+export async function executeTool<T>(toolName: string, input: Record<string, unknown>): Promise<T> {
   if (!arcade) {
     throw new Error('Arcade SDK not initialized - ARCADE_API_KEY not set');
   }

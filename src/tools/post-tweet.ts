@@ -1,12 +1,8 @@
 /**
  * Twitter Post Tweet Tool
- * 
+ *
  * Actually posts the tweet. Usually called from TweetPreview UI after user approval.
- * 
- * TODO: Implement this tool
- * - Validate tweet
- * - Call Arcade Twitter API to post
- * - Return success confirmation with link to posted tweet
+ * Validates tweet length (280 chars) and calls Arcade X API to post.
  */
 
 import { arcadeClient } from '../arcade/client.js';
