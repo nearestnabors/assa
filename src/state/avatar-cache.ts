@@ -135,6 +135,7 @@ async function fetchImageAsDataUrl(url: string): Promise<string | null> {
 
 /**
  * Get avatar for a user, using cache or fetching from URL
+ * Falls back to unavatar.io if no profile image URL is provided
  * Returns data URL or null if unavailable
  */
 export async function getAvatar(
@@ -147,13 +148,11 @@ export async function getAvatar(
     return cached;
   }
 
-  // No URL to fetch from
-  if (!profileImageUrl) {
-    return null;
-  }
+  // Use provided URL or fall back to unavatar.io
+  const urlToFetch = profileImageUrl || `https://unavatar.io/twitter/${username}`;
 
   // Fetch and cache
-  const dataUrl = await fetchImageAsDataUrl(profileImageUrl);
+  const dataUrl = await fetchImageAsDataUrl(urlToFetch);
   if (dataUrl) {
     setCachedAvatar(username, dataUrl);
   }
