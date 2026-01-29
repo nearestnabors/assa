@@ -115,14 +115,10 @@ const TOOLS: Tool[] = [
       properties: {},
       required: [],
     },
-    // _meta.ui links tool to UI resource
+    // _meta.ui links tool to UI resource (CSP configured in resource response)
     _meta: {
       ui: {
         resourceUri: UI_RESOURCES.conversationList,
-        // Allow loading avatar images from unavatar.io
-        csp: {
-          resourceDomains: ['https://unavatar.io'],
-        },
       },
     },
   },
@@ -231,14 +227,31 @@ export function createServer(): Server {
 
     const html = await loadUIResource(filename);
 
-    return {
-      contents: [
-        {
-          uri,
-          mimeType: RESOURCE_MIME_TYPE,
-          text: html,
+    // Base resource content
+    const resourceContent: {
+      uri: string;
+      mimeType: string;
+      text: string;
+      _meta?: { ui: { csp: { resourceDomains: string[] } } };
+    } = {
+      uri,
+      mimeType: RESOURCE_MIME_TYPE,
+      text: html,
+    };
+
+    // Add CSP for conversation list to allow loading avatars from unavatar.io
+    if (uri === UI_RESOURCES.conversationList) {
+      resourceContent._meta = {
+        ui: {
+          csp: {
+            resourceDomains: ['https://unavatar.io'],
+          },
         },
-      ],
+      };
+    }
+
+    return {
+      contents: [resourceContent],
     };
   });
 
