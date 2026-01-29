@@ -55,16 +55,14 @@ interface User {
   profile_image_url?: string;
 }
 
-// Arcade API response structure: { value: { data: [...], includes: { users: [...] } } }
+// Arcade SDK executeTool returns the value directly: { data: [...], includes: { users: [...] } }
 interface SearchResponse {
-  value: {
-    data?: Tweet[];
-    includes?: {
-      users?: User[];
-    };
-    meta?: {
-      result_count?: number;
-    };
+  data?: Tweet[];
+  includes?: {
+    users?: User[];
+  };
+  meta?: {
+    result_count?: number;
   };
 }
 
@@ -121,10 +119,10 @@ export async function twitterConversations(): Promise<unknown> {
     // Debug: Log the raw response structure to file
     debugLog('Raw mentionsResponse:', mentionsResponse);
 
-    const mentions = mentionsResponse.value?.data || [];
-    const mentionUsers = mentionsResponse.value?.includes?.users || [];
+    const mentions = mentionsResponse.data || [];
+    const mentionUsers = mentionsResponse.includes?.users || [];
     debugLog(`Found ${mentions.length} mentions`, {
-      hasValueData: !!mentionsResponse.value?.data,
+      hasData: !!mentionsResponse.data,
       mentions,
     });
 
@@ -154,7 +152,7 @@ export async function twitterConversations(): Promise<unknown> {
       }
     );
 
-    const userTweets = userTweetsResponse.value?.data || [];
+    const userTweets = userTweetsResponse.data || [];
     console.error(`[ASSA] Found ${userTweets.length} user tweets`);
 
     // 3. Build a set of tweet IDs that the user has replied to
