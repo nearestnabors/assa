@@ -2,7 +2,8 @@
  * Twitter Post Tweet Tool
  *
  * Actually posts the tweet. Usually called from TweetPreview UI after user approval.
- * Validates tweet length (280 chars) and calls Arcade X API to post.
+ * Calls Arcade X API to post - the API handles character limit validation
+ * (280 for free tier, 25,000 for X Premium).
  */
 
 import { arcadeClient } from '../arcade/client.js';
@@ -23,18 +24,8 @@ export async function twitterPostTweet(
   // The Arcade SDK will return auth info if needed, and handleToolError
   // will convert it to the auth UI response.
 
-  // Validate tweet length
-  if (text.length > 280) {
-    return {
-      content: [
-        {
-          type: 'text',
-          text: `Tweet is too long (${text.length}/280 characters). Cannot post.`,
-        },
-      ],
-      isError: true,
-    };
-  }
+  // Note: Character limit validation is handled by the X API
+  // (280 for free tier, 25,000 for X Premium)
 
   // Post the tweet via Arcade
   try {
