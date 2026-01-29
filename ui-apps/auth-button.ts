@@ -256,11 +256,11 @@ app.ontoolresult = (result) => {
   if (textContent && 'text' in textContent) {
     const text = textContent.text as string;
 
-    // Already authenticated - use authPoller to check and load conversations
+    // Already authenticated - just show status (don't auto-load conversations)
+    // Auto-load only happens after OAuth flow completes via authPoller
     if (text.includes('connected') || text.startsWith('✓')) {
       statusText.textContent = text;
       statusText.style.color = '#22c55e';
-      authPoller.checkAuthStatus();
       return;
     }
 
