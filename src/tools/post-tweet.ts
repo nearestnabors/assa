@@ -10,7 +10,7 @@
  */
 
 import { arcadeClient } from '../arcade/client.js';
-import { ensureAuth, handleToolError } from '../auth/manager.js';
+import { handleToolError } from '../auth/manager.js';
 
 interface PostTweetArgs {
   text: string;
@@ -23,11 +23,9 @@ export async function twitterPostTweet(
 ): Promise<unknown> {
   const { text, reply_to_id, quote_tweet_id } = args as unknown as PostTweetArgs;
 
-  // Check authentication
-  const authResult = await ensureAuth();
-  if (authResult) {
-    return authResult;
-  }
+  // Don't pre-check auth - let the tool execution handle it.
+  // The Arcade SDK will return auth info if needed, and handleToolError
+  // will convert it to the auth UI response.
 
   // Validate tweet length
   if (text.length > 280) {
@@ -50,15 +48,23 @@ export async function twitterPostTweet(
       quote_tweet_id,
     });
 
+    // Return JSON for UI parsing
     return {
       content: [
         {
           type: 'text',
-          text: `✓ Tweet posted successfully!\n\nView it here: ${result.url}`,
+          text: JSON.stringify({
+            success: true,
+            text,
+            url: result.url,
+            reply_to_id,
+          }),
         },
       ],
     };
   } catch (error) {
+    // handleToolError will return authRequired response for auth errors
+    // or a generic error for other errors
     return handleToolError(error);
   }
 }

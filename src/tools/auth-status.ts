@@ -3,11 +3,9 @@
  *
  * Checks if Twitter is authenticated via Arcade.
  * If authenticated, uses X.WhoAmI to get the username.
- * If not authenticated, returns an AuthButton UI component.
+ * If not authenticated, returns auth data for the MCP Apps UI component.
  */
 
-import { createUIResource } from '@mcp-ui/server';
-import { createAuthButtonUI } from '../ui/auth-button.js';
 import { arcadeClient } from '../arcade/client.js';
 
 export async function twitterAuthStatus(
@@ -44,25 +42,19 @@ export async function twitterAuthStatus(
     };
   }
 
-  // Need actual OAuth - show auth button
+  // Need actual OAuth - return JSON data for the auth-button UI app
+  const authData = {
+    service: 'Twitter',
+    authUrl: oauthUrl,
+    state: state,
+  };
+
   return {
     content: [
       {
         type: 'text',
-        text: 'Twitter is not connected. Click the button below to authorize.',
+        text: JSON.stringify(authData),
       },
-      createUIResource({
-        uri: `ui://assa/auth-button/${state}`,
-        content: {
-          type: 'rawHtml',
-          htmlString: createAuthButtonUI({
-            service: 'Twitter',
-            authUrl: oauthUrl,
-            state: state,
-          }),
-        },
-        encoding: 'text',
-      }),
     ],
   };
 }

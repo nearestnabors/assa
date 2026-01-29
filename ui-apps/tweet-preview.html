@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tweet Preview</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 16px;
+      background: transparent;
+    }
+    .preview-card {
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    .preview-header {
+      padding: 16px;
+      border-bottom: 1px solid #e2e8f0;
+      font-weight: 600;
+      color: #1e293b;
+    }
+    .reply-context, .quote-context {
+      padding: 12px 16px;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .reply-label {
+      font-size: 13px;
+      color: #3b82f6;
+    }
+    .reply-text, .quote-text {
+      font-size: 14px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+    .tweet-content {
+      padding: 16px;
+      min-height: 80px;
+    }
+    .tweet-text {
+      font-size: 16px;
+      line-height: 1.5;
+      color: #1e293b;
+      white-space: pre-wrap;
+    }
+    .char-count {
+      text-align: right;
+      padding: 8px 16px;
+      font-size: 14px;
+    }
+    .char-count.ok { color: #22c55e; }
+    .char-count.warning { color: #f59e0b; }
+    .char-count.over { color: #ef4444; font-weight: 600; }
+    .actions {
+      display: flex;
+      gap: 12px;
+      padding: 16px;
+      border-top: 1px solid #e2e8f0;
+      justify-content: flex-end;
+    }
+    .btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-post {
+      background: #3b82f6;
+      color: white;
+      border: none;
+    }
+    .btn-post:hover { background: #2563eb; }
+    .btn-post:disabled { background: #94a3b8; cursor: not-allowed; }
+    .btn-edit {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #e2e8f0;
+    }
+    .btn-edit:hover { background: #e2e8f0; }
+    .btn-cancel {
+      background: transparent;
+      color: #64748b;
+      border: none;
+    }
+    .btn-cancel:hover { color: #ef4444; }
+    .loading {
+      padding: 32px;
+      text-align: center;
+      color: #6b7280;
+    }
+    .hidden { display: none; }
+    .success-message {
+      padding: 16px;
+      background: #dcfce7;
+      color: #166534;
+      text-align: center;
+      font-weight: 500;
+    }
+    .error-message {
+      padding: 16px;
+      background: #fee2e2;
+      color: #991b1b;
+      text-align: center;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div id="loading" class="loading">Loading preview...</div>
+
+  <div id="previewCard" class="preview-card hidden">
+    <div class="preview-header">Tweet Preview</div>
+    <div id="replyContext" class="reply-context hidden">
+      <span class="reply-label">Replying to <span id="replyAuthor"></span></span>
+      <p id="replyText" class="reply-text"></p>
+    </div>
+    <div class="tweet-content">
+      <p id="tweetText" class="tweet-text"></p>
+    </div>
+    <div id="quoteContext" class="quote-context hidden">
+      <p id="quoteText" class="quote-text"></p>
+    </div>
+    <div id="charCount" class="char-count ok">0/280</div>
+    <div id="actions" class="actions">
+      <button id="cancelBtn" class="btn btn-cancel">Cancel</button>
+      <button id="editBtn" class="btn btn-edit">Edit</button>
+      <button id="postBtn" class="btn btn-post">Post</button>
+    </div>
+  </div>
+
+  <div id="successMessage" class="success-message hidden"></div>
+  <div id="errorMessage" class="error-message hidden"></div>
+
+  <script type="module" src="./tweet-preview.ts"></script>
+</body>
+</html>

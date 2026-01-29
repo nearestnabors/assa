@@ -1,6 +1,6 @@
 {
   "name": "assa-mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Anti-Social Social Agent - MCP server for Twitter with rich UI components",
   "author": "RL",
   "license": "MIT",
@@ -11,14 +11,16 @@
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "build:ui": "rm -rf dist/ui && mkdir -p dist/ui && VITE_INPUT=auth-button.html vite build && VITE_INPUT=tweet-preview.html vite build && VITE_INPUT=conversation-list.html vite build",
+    "build:server": "tsc",
+    "build": "npm run build:ui && npm run build:server",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
   "dependencies": {
     "@arcadeai/arcadejs": "^2.1.0",
-    "@mcp-ui/server": "^5.0.0",
+    "@modelcontextprotocol/ext-apps": "^1.0.1",
     "@modelcontextprotocol/sdk": "^1.0.0",
     "dotenv": "^17.2.3",
     "zod": "^3.23.0"
@@ -26,7 +28,9 @@
   "devDependencies": {
     "@types/node": "^20.11.0",
     "tsx": "^4.7.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vite": "^6.0.0",
+    "vite-plugin-singlefile": "^2.0.3"
   },
   "engines": {
     "node": ">=20.0.0"
@@ -37,7 +41,7 @@
     "twitter",
     "goose",
     "ai-agent",
-    "mcp-ui"
+    "mcp-apps"
   ],
   "repository": {
     "type": "git",

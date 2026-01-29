@@ -1,7 +1,16 @@
-import { createUIResource } from '@mcp-ui/server';
+/**
+ * Twitter Conversations Tool
+ *
+ * Fetches unreplied mentions and returns data for the conversation list UI.
+ */
+
 import { appendFileSync } from 'fs';
-import { getUsername, isDismissed, pruneExpiredDismissals, updateLastChecked } from '../state/manager.js';
-import { createConversationListUI, type ConversationItem } from '../ui/conversation-list.js';
+import {
+  getUsername,
+  isDismissed,
+  pruneExpiredDismissals,
+  updateLastChecked,
+} from '../state/manager.js';
 import { timestampFromSnowflake } from '../utils/time.js';
 
 const DEBUG_LOG = '/tmp/assa-conversations-debug.log';
@@ -58,7 +67,10 @@ async function arcadeRequest<T>(
 /**
  * Execute an Arcade tool
  */
-async function executeTool<T>(toolName: string, input: Record<string, unknown>): Promise<T> {
+async function executeTool<T>(
+  toolName: string,
+  input: Record<string, unknown>
+): Promise<T> {
   const response = await arcadeRequest<{
     output?: T;
     status: string;
@@ -116,9 +128,21 @@ interface SearchResponse {
   };
 }
 
+interface ConversationItem {
+  tweet_id: string;
+  author_username: string;
+  author_display_name: string;
+  author_avatar_url?: string;
+  text: string;
+  created_at: string;
+  reply_count: number;
+  like_count: number;
+  retweet_count: number;
+}
+
 /**
  * Tool: twitter_conversations
- * Fetches unreplied mentions and presents them as a conversation inbox
+ * Fetches unreplied mentions and returns data for the conversation list UI
  */
 export async function twitterConversations(): Promise<unknown> {
   // Clean up dismissed entries for tweets older than 7 days (X's search limit)
@@ -159,26 +183,24 @@ export async function twitterConversations(): Promise<unknown> {
 
     const mentions = mentionsResponse.value?.data || [];
     const mentionUsers = mentionsResponse.value?.includes?.users || [];
-    debugLog(`Found ${mentions.length} mentions`, { hasValueData: !!mentionsResponse.value?.data, mentions });
+    debugLog(`Found ${mentions.length} mentions`, {
+      hasValueData: !!mentionsResponse.value?.data,
+      mentions,
+    });
 
     if (mentions.length === 0) {
+      // Return empty conversation data for UI
+      const emptyData = {
+        conversations: [],
+        username,
+      };
+
       return {
         content: [
           {
             type: 'text',
-            text: `No mentions found for @${username} in the last 7 days.\n\nTwitter's search API only returns tweets from the past week.`,
+            text: JSON.stringify(emptyData),
           },
-          createUIResource({
-            uri: `ui://assa/conversations/empty`,
-            content: {
-              type: 'rawHtml',
-              htmlString: createConversationListUI({
-                conversations: [],
-                username,
-              }),
-            },
-            encoding: 'text',
-          }),
         ],
       };
     }
@@ -207,7 +229,10 @@ export async function twitterConversations(): Promise<unknown> {
     console.error(`[ASSA] User has replied to ${repliedToIds.size} tweets`);
 
     // 4. Build user lookup map for display names
-    const userMap = new Map<string, { username: string; name: string; avatar?: string }>();
+    const userMap = new Map<
+      string,
+      { username: string; name: string; avatar?: string }
+    >();
     for (const user of mentionUsers) {
       userMap.set(user.id, {
         username: user.username,
@@ -237,9 +262,9 @@ export async function twitterConversations(): Promise<unknown> {
       }
 
       // Skip if the mention is from the user themselves
-      // Check both the userMap lookup AND the inline author_username field
+      // Prefer authorInfo from includes.users (reliable) over inline fields (unreliable)
       const authorInfo = userMap.get(mention.author_id || '');
-      const authorUsername = mention.author_username || authorInfo?.username || '';
+      const authorUsername = authorInfo?.username || mention.author_username || '';
       if (authorUsername.toLowerCase() === username.toLowerCase()) {
         skippedOwnTweets++;
         continue;
@@ -262,10 +287,18 @@ export async function twitterConversations(): Promise<unknown> {
         timestamp = snowflakeDate ? snowflakeDate.toISOString() : new Date().toISOString();
       }
 
+      // Debug avatar resolution
+      debugLog(`Avatar for ${authorUsername}`, {
+        author_id: mention.author_id,
+        authorInfo_exists: !!authorInfo,
+        authorInfo_avatar: authorInfo?.avatar,
+      });
+
       conversations.push({
         tweet_id: mention.id,
         author_username: authorUsername || mention.author_id || 'unknown',
-        author_display_name: mention.author_name || authorInfo?.name || authorUsername || 'Unknown',
+        author_display_name:
+          authorInfo?.name || mention.author_name || authorUsername || 'Unknown',
         author_avatar_url: authorInfo?.avatar,
         text: mention.text,
         created_at: timestamp,
@@ -292,29 +325,18 @@ export async function twitterConversations(): Promise<unknown> {
     // Update last checked timestamp
     updateLastChecked();
 
-    const awaitingCount = conversations.length;
-    const statusText =
-      awaitingCount === 0
-        ? `All caught up! No conversations need your attention.`
-        : `Found ${awaitingCount} conversation${awaitingCount === 1 ? '' : 's'} awaiting your reply.`;
+    // Return JSON data for the conversation-list UI app
+    const conversationsData = {
+      conversations,
+      username,
+    };
 
     return {
       content: [
         {
           type: 'text',
-          text: statusText,
+          text: JSON.stringify(conversationsData),
         },
-        createUIResource({
-          uri: `ui://assa/conversations/${Date.now()}`,
-          content: {
-            type: 'rawHtml',
-            htmlString: createConversationListUI({
-              conversations,
-              username,
-            }),
-          },
-          encoding: 'text',
-        }),
       ],
     };
   } catch (error) {

@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conversations</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: transparent;
+      padding: 16px;
+    }
+
+    .container {
+      max-width: 600px;
+    }
+
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .page-header h2 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #0f172a;
+    }
+
+    .badge {
+      background: #3b82f6;
+      color: white;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 4px 10px;
+      border-radius: 12px;
+    }
+
+    .badge.empty {
+      background: #22c55e;
+    }
+
+    .conversation-card {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      border: 1px solid #e2e8f0;
+      transition: all 0.2s ease;
+    }
+
+    .conversation-card:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      border-color: #cbd5e1;
+    }
+
+    .card-main {
+      display: flex;
+      gap: 12px;
+    }
+
+    .avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+      background: #1da1f2;
+    }
+
+    .avatar-placeholder {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: linear-gradient(135deg, #1da1f2 0%, #0d8ecf 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    .content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .content .header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+
+    .display-name {
+      font-weight: 600;
+      color: #0f172a;
+      font-size: 14px;
+    }
+
+    .handle {
+      color: #64748b;
+      font-size: 13px;
+    }
+
+    .time {
+      color: #94a3b8;
+      font-size: 13px;
+      margin-left: auto;
+    }
+
+    .text {
+      color: #1e293b;
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 8px;
+      word-wrap: break-word;
+    }
+
+    .reply-box {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #f1f5f9;
+    }
+
+    .reply-input {
+      width: 100%;
+      min-height: 60px;
+      padding: 10px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      resize: vertical;
+      margin-bottom: 8px;
+    }
+
+    .reply-input:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    }
+
+    .reply-input::placeholder {
+      color: #94a3b8;
+    }
+
+    .reply-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .action-btn {
+      flex: 1;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+    }
+
+    .action-btn.dismiss {
+      background: #f1f5f9;
+      color: #64748b;
+    }
+
+    .action-btn.dismiss:hover {
+      background: #e2e8f0;
+      color: #475569;
+    }
+
+    .action-btn.reply {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .action-btn.reply:hover {
+      background: #2563eb;
+    }
+
+    .action-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      background: #f8fafc;
+      border-radius: 12px;
+      border: 1px dashed #e2e8f0;
+    }
+
+    .empty-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    .empty-state h3 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #0f172a;
+      margin-bottom: 8px;
+    }
+
+    .empty-state p {
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    .refresh-btn {
+      display: block;
+      width: 100%;
+      margin-top: 16px;
+      padding: 12px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .refresh-btn:hover {
+      background: #f1f5f9;
+      color: #475569;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 32px;
+      color: #6b7280;
+    }
+
+    .reply-sent {
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .reply-sent-header {
+      color: #16a34a;
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    .reply-sent-text {
+      color: #1e293b;
+      font-size: 14px;
+      line-height: 1.4;
+      margin-bottom: 8px;
+    }
+
+    .reply-sent-link {
+      color: #3b82f6;
+      font-size: 13px;
+      text-decoration: none;
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .reply-sent-link:hover {
+      text-decoration: underline;
+    }
+
+    .reply-error {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .reply-error p {
+      color: #991b1b;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="container" id="container">
+    <div id="loading" class="loading">Loading conversations...</div>
+
+    <div id="content" class="hidden">
+      <div class="page-header">
+        <h2>Your Conversations</h2>
+        <span id="badge" class="badge">0 awaiting</span>
+      </div>
+
+      <div id="conversationsList"></div>
+
+      <button id="refreshBtn" class="refresh-btn">Refresh conversations</button>
+    </div>
+  </div>
+
+  <script type="module" src="./conversation-list.ts"></script>
+</body>
+</html>

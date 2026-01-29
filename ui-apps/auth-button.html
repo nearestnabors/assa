@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ASSA Auth</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 16px;
+      background: transparent;
+    }
+
+    .auth-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-connect {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .btn-connect:hover {
+      background: #2563eb;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+
+    .btn-check {
+      background: #22c55e;
+      color: white;
+    }
+
+    .btn-check:hover {
+      background: #16a34a;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+    }
+
+    .btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .status-text {
+      font-size: 16px;
+      color: #6b7280;
+      line-height: 1.5;
+      text-align: center;
+      max-width: 400px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .loading {
+      text-align: center;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-container">
+    <div id="loading" class="loading">Loading...</div>
+
+    <!-- Step 1: Connect button -->
+    <button id="connectBtn" class="btn btn-connect hidden">
+      <span>Connect X/Twitter</span>
+    </button>
+
+    <!-- Step 2: After clicking, show "I've authorized" button -->
+    <button id="checkBtn" class="btn btn-check hidden">
+      <span>I've completed authorization</span>
+    </button>
+
+    <p id="statusText" class="status-text"></p>
+  </div>
+
+  <script type="module" src="./auth-button.ts"></script>
+</body>
+</html>

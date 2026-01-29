@@ -1,17 +1,11 @@
 /**
  * Twitter Draft Tweet Tool
- * 
- * Creates a draft tweet and shows a preview UI for approval.
- * Does NOT post the tweet - that happens when user clicks Post in the UI.
- * 
- * TODO: Implement this tool
- * - Validate tweet length (max 280)
- * - If reply, fetch context of original tweet
- * - Build TweetPreview UI with Post/Edit/Cancel buttons
+ *
+ * Creates a draft tweet and returns data for the preview UI.
+ * Does NOT post the tweet - that happens when user clicks Post in the UI,
+ * which calls twitter_post_tweet directly via MCP Apps.
  */
 
-import { createUIResource } from '@mcp-ui/server';
-import { createTweetPreviewUI } from '../ui/tweet-preview.js';
 import { arcadeClient } from '../arcade/client.js';
 import { ensureAuth } from '../auth/manager.js';
 
@@ -25,7 +19,7 @@ export async function twitterDraftTweet(
   args: Record<string, unknown>
 ): Promise<unknown> {
   const { text, reply_to_id, quote_tweet_id } = args as unknown as DraftTweetArgs;
-  
+
   // Check authentication
   const authResult = await ensureAuth();
   if (authResult) {
@@ -64,35 +58,32 @@ export async function twitterDraftTweet(
     }
   }
 
+  // Return JSON data for the tweet-preview UI app
   const draftData = {
     text,
     charCount: text.length,
-    replyTo: replyContext ? {
-      id: reply_to_id!,
-      author: replyContext.author.handle,
-      text: replyContext.text,
-    } : undefined,
-    quoteTweet: quoteContext ? {
-      id: quote_tweet_id!,
-      author: quoteContext.author.handle,
-      text: quoteContext.text,
-    } : undefined,
+    replyTo: replyContext
+      ? {
+          id: reply_to_id!,
+          author: replyContext.author.handle,
+          text: replyContext.text,
+        }
+      : undefined,
+    quoteTweet: quoteContext
+      ? {
+          id: quote_tweet_id!,
+          author: quoteContext.author.handle,
+          text: quoteContext.text,
+        }
+      : undefined,
   };
 
   return {
     content: [
       {
         type: 'text',
-        text: `Draft tweet ready (${text.length}/280 characters):\n\n"${text}"\n\nReview the preview below and click Post to publish.`,
+        text: JSON.stringify(draftData),
       },
-      createUIResource({
-        uri: `ui://assa/tweet-preview/${Date.now()}`,
-        content: {
-          type: 'rawHtml',
-          htmlString: createTweetPreviewUI(draftData),
-        },
-        encoding: 'text',
-      }),
     ],
   };
 }

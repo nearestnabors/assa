@@ -1,7 +1,8 @@
 /**
  * ASSA MCP Server Setup
  *
- * Registers all tools and handles MCP protocol communication.
+ * Registers all tools with MCP Apps UI resources.
+ * Uses @modelcontextprotocol/ext-apps for rich UI components.
  *
  * Platform: Twitter/X via Arcade.dev
  */
@@ -10,9 +11,15 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
+  ListResourcesRequestSchema,
+  ReadResourceRequestSchema,
   type Tool,
   type CallToolResult,
 } from '@modelcontextprotocol/sdk/types.js';
+import { RESOURCE_MIME_TYPE } from '@modelcontextprotocol/ext-apps/server';
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import { fileURLToPath } from 'url';
 
 // Twitter tools
 import { twitterAuthStatus } from './tools/auth-status.js';
@@ -21,7 +28,17 @@ import { twitterPostTweet } from './tools/post-tweet.js';
 import { twitterConversations } from './tools/conversations.js';
 import { twitterDismissConversation } from './tools/dismiss-conversation.js';
 
-// Tool definitions for MCP
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// UI Resource URIs
+const UI_RESOURCES = {
+  authButton: 'ui://assa/auth-button.html',
+  tweetPreview: 'ui://assa/tweet-preview.html',
+  conversationList: 'ui://assa/conversation-list.html',
+};
+
+// Tool definitions for MCP with UI metadata
 const TOOLS: Tool[] = [
   // === Twitter/X Tools ===
   {
@@ -31,6 +48,12 @@ const TOOLS: Tool[] = [
       type: 'object',
       properties: {},
       required: [],
+    },
+    // _meta.ui links tool to UI resource
+    _meta: {
+      ui: {
+        resourceUri: UI_RESOURCES.authButton,
+      },
     },
   },
   {
@@ -54,6 +77,12 @@ const TOOLS: Tool[] = [
       },
       required: ['text'],
     },
+    // _meta.ui links tool to UI resource
+    _meta: {
+      ui: {
+        resourceUri: UI_RESOURCES.tweetPreview,
+      },
+    },
   },
   {
     name: 'twitter_post_tweet',
@@ -76,6 +105,7 @@ const TOOLS: Tool[] = [
       },
       required: ['text'],
     },
+    // No UI - this is a data-only tool called from tweet-preview UI
   },
   {
     name: 'twitter_conversations',
@@ -84,6 +114,12 @@ const TOOLS: Tool[] = [
       type: 'object',
       properties: {},
       required: [],
+    },
+    // _meta.ui links tool to UI resource
+    _meta: {
+      ui: {
+        resourceUri: UI_RESOURCES.conversationList,
+      },
     },
   },
   {
@@ -103,8 +139,8 @@ const TOOLS: Tool[] = [
       },
       required: ['tweet_id', 'reply_count'],
     },
+    // No UI - this is a data-only tool called from conversation-list UI
   },
-
 ];
 
 // Tool handler dispatch
@@ -117,15 +153,30 @@ const toolHandlers: Record<string, ToolHandler> = {
   twitter_dismiss_conversation: twitterDismissConversation,
 };
 
+// Load bundled UI HTML from dist/ui/{name}/ui-apps/{name}.html
+async function loadUIResource(filename: string): Promise<string> {
+  const baseName = filename.replace('.html', '');
+  // Try from dist/ui/{name}/ui-apps/{name}.html (vite output location)
+  const filePath = path.join(__dirname, 'ui', baseName, 'ui-apps', filename);
+  try {
+    return await fs.readFile(filePath, 'utf-8');
+  } catch {
+    // Fallback: try from project root dist/ui/{name}/ui-apps/{name}.html (for development)
+    const altPath = path.join(__dirname, '..', 'dist', 'ui', baseName, 'ui-apps', filename);
+    return await fs.readFile(altPath, 'utf-8');
+  }
+}
+
 export function createServer(): Server {
   const server = new Server(
     {
       name: 'assa-mcp',
-      version: '0.1.0',
+      version: '0.2.0',
     },
     {
       capabilities: {
         tools: {},
+        resources: {},
       },
     }
   );
@@ -133,6 +184,58 @@ export function createServer(): Server {
   // Handle tool listing
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     return { tools: TOOLS };
+  });
+
+  // Handle resource listing (for MCP Apps UI resources)
+  server.setRequestHandler(ListResourcesRequestSchema, async () => {
+    return {
+      resources: [
+        {
+          uri: UI_RESOURCES.authButton,
+          name: 'Auth Button UI',
+          mimeType: RESOURCE_MIME_TYPE,
+        },
+        {
+          uri: UI_RESOURCES.tweetPreview,
+          name: 'Tweet Preview UI',
+          mimeType: RESOURCE_MIME_TYPE,
+        },
+        {
+          uri: UI_RESOURCES.conversationList,
+          name: 'Conversation List UI',
+          mimeType: RESOURCE_MIME_TYPE,
+        },
+      ],
+    };
+  });
+
+  // Handle resource reading (serve bundled UI HTML)
+  server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+    const { uri } = request.params;
+
+    // Map URI to filename
+    const uriToFile: Record<string, string> = {
+      [UI_RESOURCES.authButton]: 'auth-button.html',
+      [UI_RESOURCES.tweetPreview]: 'tweet-preview.html',
+      [UI_RESOURCES.conversationList]: 'conversation-list.html',
+    };
+
+    const filename = uriToFile[uri];
+    if (!filename) {
+      throw new Error(`Unknown resource URI: ${uri}`);
+    }
+
+    const html = await loadUIResource(filename);
+
+    return {
+      contents: [
+        {
+          uri,
+          mimeType: RESOURCE_MIME_TYPE,
+          text: html,
+        },
+      ],
+    };
   });
 
   // Handle tool calls
