@@ -6,6 +6,8 @@
  */
 
 import { App } from '@modelcontextprotocol/ext-apps';
+import { createAuthPoller } from './lib/auth-poller.js';
+import { isAuthRequired, parseToolResult } from './lib/auth-handler.js';
 
 interface TweetDraft {
   text: string;
@@ -42,6 +44,27 @@ const successMessage = document.getElementById('successMessage')!;
 const errorMessage = document.getElementById('errorMessage')!;
 
 let draft: TweetDraft | null = null;
+
+// Auth poller for handling re-auth when posting
+const authPoller = createAuthPoller(app, {
+  onAuthComplete: async () => {
+    // After re-auth, retry posting the draft
+    if (draft) {
+      postBtn.textContent = 'Posting...';
+      await postTweet();
+    }
+  },
+  onStatusChange: (status) => {
+    errorMessage.textContent = status;
+    errorMessage.classList.remove('hidden');
+  },
+  onError: (error) => {
+    errorMessage.textContent = `Auth error: ${error.message}`;
+    errorMessage.classList.remove('hidden');
+    (postBtn as HTMLButtonElement).disabled = false;
+    postBtn.textContent = 'Post';
+  },
+});
 
 function escapeHtml(text: string): string {
   const div = document.createElement('div');
@@ -116,12 +139,9 @@ editBtn.addEventListener('click', async () => {
   });
 });
 
-// Post button - call x_post_tweet directly
-postBtn.addEventListener('click', async () => {
+// Post tweet with auth handling
+async function postTweet(): Promise<void> {
   if (!draft) return;
-
-  (postBtn as HTMLButtonElement).disabled = true;
-  postBtn.textContent = 'Posting...';
 
   try {
     const result = await app.callServerTool({
@@ -133,20 +153,39 @@ postBtn.addEventListener('click', async () => {
       },
     });
 
-    // Check result
-    const textContent = result.content?.find((c: { type: string }) => c.type === 'text');
-    if (textContent && 'text' in textContent) {
-      const text = textContent.text as string;
-      if (text.includes('posted') || text.includes('success')) {
-        previewCard.classList.add('hidden');
-        successMessage.textContent = 'Tweet posted successfully!';
-        successMessage.classList.remove('hidden');
-      } else {
-        errorMessage.textContent = text;
-        errorMessage.classList.remove('hidden');
-        (postBtn as HTMLButtonElement).disabled = false;
-        postBtn.textContent = 'Post';
+    const parsed = parseToolResult(result);
+    if (!parsed) {
+      throw new Error('Invalid response from server');
+    }
+
+    const { data } = parsed;
+
+    // Check if auth is required
+    if (isAuthRequired(data)) {
+      const authData = data as { service: string; authUrl: string; state: string };
+      errorMessage.textContent = 'Authentication required. Opening auth window...';
+      errorMessage.classList.remove('hidden');
+      actionsEl.classList.add('hidden');
+      await authPoller.startAuth(authData.authUrl);
+      return;
+    }
+
+    // Check for errors
+    if (parsed.isError || (data && typeof data === 'object' && 'error' in data)) {
+      throw new Error(typeof data === 'object' && data && 'error' in data ? String(data.error) : 'Failed to post');
+    }
+
+    // Success
+    const successData = data as { success?: boolean; url?: string };
+    if (successData.success || JSON.stringify(data).includes('posted') || JSON.stringify(data).includes('success')) {
+      previewCard.classList.add('hidden');
+      successMessage.textContent = 'Tweet posted successfully!';
+      if (successData.url) {
+        successMessage.innerHTML = `Tweet posted! <a href="${escapeHtml(successData.url)}" target="_blank">View on X →</a>`;
       }
+      successMessage.classList.remove('hidden');
+    } else {
+      throw new Error('Unexpected response');
     }
   } catch (error) {
     errorMessage.textContent = `Error: ${error instanceof Error ? error.message : 'Failed to post'}`;
@@ -154,6 +193,17 @@ postBtn.addEventListener('click', async () => {
     (postBtn as HTMLButtonElement).disabled = false;
     postBtn.textContent = 'Post';
   }
+}
+
+// Post button - call postTweet with auth handling
+postBtn.addEventListener('click', async () => {
+  if (!draft) return;
+
+  (postBtn as HTMLButtonElement).disabled = true;
+  postBtn.textContent = 'Posting...';
+  errorMessage.classList.add('hidden');
+
+  await postTweet();
 });
 
 // Connect to host

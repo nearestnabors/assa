@@ -6,7 +6,7 @@
  */
 
 import { App } from '@modelcontextprotocol/ext-apps';
-import { openExternalLink } from './lib/auth-handler.js';
+import { createAuthPoller } from './lib/auth-poller.js';
 
 interface AuthData {
   service: string;
@@ -44,7 +44,31 @@ const conversationsListEl = document.getElementById('conversationsList')!;
 const refreshBtn = document.getElementById('refreshBtn')!;
 
 let authData: AuthData | null = null;
-let pollInterval: number | null = null;
+
+// Create auth poller with callback to load conversations
+const authPoller = createAuthPoller(app, {
+  onAuthComplete: async () => {
+    const convResult = await app.callServerTool({
+      name: 'x_conversations',
+      arguments: {},
+    });
+
+    const convTextContent = convResult.content?.find((c: { type: string }) => c.type === 'text');
+    if (convTextContent && 'text' in convTextContent) {
+      const data = JSON.parse(convTextContent.text as string) as ConversationsData;
+      authContainer.classList.add('hidden');
+      conversationsContainer.classList.remove('hidden');
+      renderConversations(data);
+    }
+  },
+  onStatusChange: (status) => {
+    statusText.textContent = status;
+  },
+  onError: (error) => {
+    statusText.textContent = `Error: ${error.message}`;
+    connectBtn.classList.remove('hidden');
+  },
+});
 
 // === Utility functions ===
 
@@ -222,54 +246,6 @@ function attachConversationListeners(): void {
   });
 }
 
-// === Auth and polling ===
-
-async function checkAuthAndLoadConversations(): Promise<boolean> {
-  try {
-    const result = await app.callServerTool({
-      name: 'x_auth_status',
-      arguments: {},
-    });
-
-    const textContent = result.content?.find((c: { type: string }) => c.type === 'text');
-    if (textContent && 'text' in textContent) {
-      const text = textContent.text as string;
-      if (text.includes('connected')) {
-        // Auth complete - stop polling and load conversations
-        if (pollInterval) {
-          clearInterval(pollInterval);
-          pollInterval = null;
-        }
-
-        statusText.textContent = 'Loading conversations...';
-
-        const convResult = await app.callServerTool({
-          name: 'x_conversations',
-          arguments: {},
-        });
-
-        const convTextContent = convResult.content?.find((c: { type: string }) => c.type === 'text');
-        if (convTextContent && 'text' in convTextContent) {
-          const data = JSON.parse(convTextContent.text as string) as ConversationsData;
-          authContainer.classList.add('hidden');
-          conversationsContainer.classList.remove('hidden');
-          renderConversations(data);
-        }
-        return true;
-      }
-    }
-  } catch (error) {
-    console.error('[Auth] Poll error:', error);
-  }
-  return false;
-}
-
-function startPolling(): void {
-  // Poll every 2 seconds
-  pollInterval = window.setInterval(async () => {
-    await checkAuthAndLoadConversations();
-  }, 2000);
-}
 
 // === Event handlers ===
 
@@ -280,12 +256,11 @@ app.ontoolresult = (result) => {
   if (textContent && 'text' in textContent) {
     const text = textContent.text as string;
 
-    // Already authenticated
+    // Already authenticated - use authPoller to check and load conversations
     if (text.includes('connected') || text.startsWith('✓')) {
       statusText.textContent = text;
       statusText.style.color = '#22c55e';
-      // Load conversations
-      checkAuthAndLoadConversations();
+      authPoller.checkAuthStatus();
       return;
     }
 
@@ -304,15 +279,11 @@ connectBtn.addEventListener('click', async () => {
   if (!authData) return;
 
   try {
-    await openExternalLink(app, authData.authUrl);
-
-    // Hide button, show waiting message, start polling
     connectBtn.classList.add('hidden');
-    statusText.textContent = 'Waiting for authorization...';
-    startPolling();
+    await authPoller.startAuth(authData.authUrl);
   } catch (error) {
-    console.error('[Auth] Failed to open link:', error);
-    statusText.textContent = 'Error opening auth link. Try again.';
+    console.error('[Auth] Failed to start auth:', error);
+    connectBtn.classList.remove('hidden');
   }
 });
 

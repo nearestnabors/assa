@@ -22,32 +22,6 @@
         max-width: 600px;
       }
 
-      .page-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 16px;
-        padding-bottom: 12px;
-      }
-
-      .page-header h2 {
-        font-size: 18px;
-        font-weight: 600;
-        color: #0f172a;
-      }
-
-      .badge {
-        background: #3b82f6;
-        color: white;
-        font-size: 13px;
-        font-weight: 500;
-        padding: 4px 10px;
-        border-radius: 12px;
-      }
-
-      .badge.empty {
-        background: #22c55e;
-      }
 
       .conversation-card {
         background: #ffffff;
@@ -224,23 +198,35 @@
         font-size: 14px;
       }
 
-      .refresh-btn {
+      .load-more-btn {
         display: block;
         width: 100%;
         margin-top: 16px;
-        padding: 12px;
+        padding: 14px;
         background: #f8fafc;
         border: 1px solid #e2e8f0;
         border-radius: 8px;
         font-size: 14px;
-        color: #64748b;
+        font-weight: 500;
+        color: #3b82f6;
         cursor: pointer;
         transition: all 0.2s ease;
       }
 
-      .refresh-btn:hover {
-        background: #f1f5f9;
-        color: #475569;
+      .load-more-btn:hover {
+        background: #eff6ff;
+        border-color: #3b82f6;
+      }
+
+      .load-more-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .load-more-btn.all-clear {
+        color: #22c55e;
+        border-color: #86efac;
+        background: #f0fdf4;
       }
 
       .loading {
@@ -309,14 +295,10 @@
       <div id="loading" class="loading">Loading conversations...</div>
 
       <div id="content" class="hidden">
-        <div class="page-header">
-          <span id="badge" class="badge">0 awaiting</span>
-        </div>
-
         <div id="conversationsList"></div>
 
-        <button id="refreshBtn" class="refresh-btn">
-          Refresh conversations
+        <button id="loadMoreBtn" class="load-more-btn">
+          Load more...
         </button>
       </div>
     </div>

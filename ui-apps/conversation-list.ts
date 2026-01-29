@@ -42,10 +42,8 @@ const app = new App({ name: 'ASSA Conversations', version: '1.0.0' }, {}, { auto
 // DOM elements
 const loadingEl = document.getElementById('loading')!;
 const contentEl = document.getElementById('content')!;
-const badgeEl = document.getElementById('badge')!;
 const conversationsListEl = document.getElementById('conversationsList')!;
-const refreshBtn = document.getElementById('refreshBtn')!;
-const containerEl = document.getElementById('container')!;
+const loadMoreBtn = document.getElementById('loadMoreBtn') as HTMLButtonElement;
 
 let currentData: ConversationsData | null = null;
 
@@ -72,14 +70,23 @@ function formatRelativeTime(dateStr: string): string {
   return date.toLocaleDateString();
 }
 
+function updateLoadMoreButton(count: number): void {
+  if (count === 0) {
+    loadMoreBtn.textContent = 'All caught up! Check for more...';
+    loadMoreBtn.classList.add('all-clear');
+  } else {
+    loadMoreBtn.textContent = `Load ${count} more...`;
+    loadMoreBtn.classList.remove('all-clear');
+  }
+}
+
 function renderConversations(data: ConversationsData): void {
   currentData = data;
   loadingEl.classList.add('hidden');
   contentEl.classList.remove('hidden');
 
   const count = data.conversations.length;
-  badgeEl.textContent = count === 0 ? 'All clear' : `${count} awaiting`;
-  badgeEl.className = count === 0 ? 'badge empty' : 'badge';
+  updateLoadMoreButton(count);
 
   if (count === 0) {
     conversationsListEl.innerHTML = `
@@ -174,10 +181,9 @@ function attachEventListeners(): void {
         card.style.opacity = '0.5';
         setTimeout(() => card.remove(), 300);
 
-        // Update badge count
+        // Update button count
         const remaining = document.querySelectorAll('.conversation-card').length - 1;
-        badgeEl.textContent = remaining === 0 ? 'All clear' : `${remaining} awaiting`;
-        badgeEl.className = remaining === 0 ? 'badge empty' : 'badge';
+        updateLoadMoreButton(remaining);
       } catch (error) {
         btn.textContent = 'Dismiss';
         (btn as HTMLButtonElement).disabled = false;
@@ -292,10 +298,9 @@ function attachEventListeners(): void {
                 card.style.opacity = '0.5';
                 setTimeout(() => card.remove(), 500);
 
-                // Update badge
+                // Update button count
                 const remaining = document.querySelectorAll('.conversation-card').length - 1;
-                badgeEl.textContent = remaining === 0 ? 'All clear' : `${remaining} awaiting`;
-                badgeEl.className = remaining === 0 ? 'badge empty' : 'badge';
+                updateLoadMoreButton(remaining);
               } catch {
                 // Ignore dismiss errors
               }
