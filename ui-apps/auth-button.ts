@@ -88,8 +88,19 @@ checkBtn.addEventListener('click', async () => {
     if (textContent && 'text' in textContent) {
       const text = textContent.text as string;
       if (text.includes('connected')) {
-        statusText.textContent = 'Authorization successful!';
+        statusText.textContent = 'Authorization successful! Loading conversations...';
         checkBtn.textContent = 'Connected';
+
+        // Automatically load conversations after successful auth
+        try {
+          await app.callServerTool({
+            name: 'twitter_conversations',
+            arguments: {},
+          });
+        } catch (convError) {
+          console.error('[Auth Button] Failed to load conversations:', convError);
+          // Don't show error - user can manually refresh
+        }
       } else {
         statusText.textContent = 'Authorization not detected. Please try again.';
         (checkBtn as HTMLButtonElement).disabled = false;
