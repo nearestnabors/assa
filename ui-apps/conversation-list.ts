@@ -328,10 +328,11 @@ app.ontoolresult = (result) => {
   }
 };
 
-// Refresh button
-refreshBtn.addEventListener('click', async () => {
-  refreshBtn.disabled = true;
-  refreshBtn.textContent = 'Refreshing...';
+// Load more button
+loadMoreBtn.addEventListener('click', async () => {
+  const currentCount = document.querySelectorAll('.conversation-card').length;
+  loadMoreBtn.disabled = true;
+  loadMoreBtn.textContent = 'Loading...';
 
   try {
     const result = await app.callServerTool({
@@ -345,10 +346,10 @@ refreshBtn.addEventListener('click', async () => {
       renderConversations(data);
     }
   } catch (error) {
-    console.error('Failed to refresh:', error);
+    console.error('Failed to load:', error);
+    updateLoadMoreButton(currentCount);
   } finally {
-    refreshBtn.disabled = false;
-    refreshBtn.textContent = 'Refresh conversations';
+    loadMoreBtn.disabled = false;
   }
 });
 
