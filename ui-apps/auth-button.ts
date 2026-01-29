@@ -88,19 +88,20 @@ checkBtn.addEventListener('click', async () => {
     if (textContent && 'text' in textContent) {
       const text = textContent.text as string;
       if (text.includes('connected')) {
-        statusText.textContent = 'Authorization successful! Loading conversations...';
-        checkBtn.textContent = 'Connected';
+        statusText.textContent = 'Authorization successful!';
+        statusText.style.color = '#22c55e';
+        checkBtn.textContent = 'Connected ✓';
 
-        // Automatically load conversations after successful auth
-        try {
-          await app.callServerTool({
-            name: 'x_conversations',
-            arguments: {},
-          });
-        } catch (convError) {
-          console.error('[Auth Button] Failed to load conversations:', convError);
-          // Don't show error - user can manually refresh
-        }
+        // Notify the agent to load conversations
+        // Using updateModelContext prompts the agent to take action
+        await app.updateModelContext({
+          content: [
+            {
+              type: 'text',
+              text: 'X authorization completed successfully. Please use the x_conversations tool to show my conversations.',
+            },
+          ],
+        });
       } else {
         statusText.textContent = 'Authorization not detected. Please try again.';
         (checkBtn as HTMLButtonElement).disabled = false;
