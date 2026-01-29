@@ -95,9 +95,8 @@ Reply to @anthropic_devs saying I'll share slides after the talk
 | Tool | Description |
 |------|-------------|
 | `twitter_auth_status` | Check authentication, show connect button if needed |
-| `twitter_get_mentions` | Fetch recent mentions with rich UI cards |
-| `twitter_get_dms` | Fetch unread DMs |
-| `twitter_daily_digest` | Combined digest with AI summary |
+| `twitter_conversations` | Show unreplied mentions as a conversation inbox |
+| `twitter_dismiss_conversation` | Dismiss a conversation (reappears on new activity) |
 | `twitter_draft_tweet` | Create draft with preview |
 | `twitter_post_tweet` | Post after approval |
 
