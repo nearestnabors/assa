@@ -72,11 +72,13 @@ function formatRelativeTime(dateStr: string): string {
 
 function updateLoadMoreButton(count: number): void {
   if (count === 0) {
-    loadMoreBtn.textContent = 'All caught up! Check for more...';
+    // Show button only when empty - lets user check for new mentions
+    loadMoreBtn.textContent = 'Check for new mentions';
     loadMoreBtn.classList.add('all-clear');
+    loadMoreBtn.classList.remove('hidden');
   } else {
-    loadMoreBtn.textContent = `Load ${count} more...`;
-    loadMoreBtn.classList.remove('all-clear');
+    // Hide button when conversations are present
+    loadMoreBtn.classList.add('hidden');
   }
 }
 
@@ -328,11 +330,10 @@ app.ontoolresult = (result) => {
   }
 };
 
-// Load more button
+// Check for new mentions button (only visible when list is empty)
 loadMoreBtn.addEventListener('click', async () => {
-  const currentCount = document.querySelectorAll('.conversation-card').length;
   loadMoreBtn.disabled = true;
-  loadMoreBtn.textContent = 'Loading...';
+  loadMoreBtn.textContent = 'Checking...';
 
   try {
     const result = await app.callServerTool({
@@ -346,8 +347,8 @@ loadMoreBtn.addEventListener('click', async () => {
       renderConversations(data);
     }
   } catch (error) {
-    console.error('Failed to load:', error);
-    updateLoadMoreButton(currentCount);
+    console.error('[ASSA] Failed to check for mentions:', error);
+    loadMoreBtn.textContent = 'Check for new mentions';
   } finally {
     loadMoreBtn.disabled = false;
   }
