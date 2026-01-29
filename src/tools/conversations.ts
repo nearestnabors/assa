@@ -260,11 +260,10 @@ export async function xConversations(): Promise<unknown> {
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
 
-    // Note: Avatar data URLs removed from response to keep payload small.
-    // UI uses initials fallback which works well and avoids CSP issues.
-    // Clear avatar URLs to ensure we don't send any image data
+    // Set avatar URLs to unavatar.io (external service)
+    // CSP configured in server.ts allows loading from this domain
     for (const conv of conversations) {
-      delete conv.author_avatar_url;
+      conv.author_avatar_url = `https://unavatar.io/twitter/${conv.author_username}`;
     }
 
     // Update last checked timestamp

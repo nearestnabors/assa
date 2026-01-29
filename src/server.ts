@@ -119,6 +119,10 @@ const TOOLS: Tool[] = [
     _meta: {
       ui: {
         resourceUri: UI_RESOURCES.conversationList,
+        // Allow loading avatar images from unavatar.io
+        csp: {
+          resourceDomains: ['https://unavatar.io'],
+        },
       },
     },
   },

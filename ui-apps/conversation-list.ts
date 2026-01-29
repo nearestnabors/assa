@@ -1,7 +1,7 @@
 /**
  * Conversation List MCP App
  *
- * Displays Twitter mentions awaiting reply.
+ * Displays X mentions awaiting reply.
  * Supports dismiss and reply actions via direct tool calls.
  */
 
@@ -107,10 +107,10 @@ function renderConversations(data: ConversationsData): void {
       const relativeTime = formatRelativeTime(conv.created_at);
       const initials = getInitials(conv.author_display_name || conv.author_username || '?');
 
-      // Use data URL avatars if available (CSP allows data:), otherwise use initials
-      const hasDataUrl = conv.author_avatar_url?.startsWith('data:');
-      const avatarHtml = hasDataUrl
-        ? `<img class="avatar" src="${escapeHtml(conv.author_avatar_url!)}" alt="${escapeHtml(conv.author_display_name)}">`
+      // Use avatar URL if available (CSP allows unavatar.io via resourceDomains), otherwise use initials
+      const hasAvatarUrl = !!conv.author_avatar_url;
+      const avatarHtml = hasAvatarUrl
+        ? `<img class="avatar" src="${escapeHtml(conv.author_avatar_url!)}" alt="${escapeHtml(conv.author_display_name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="avatar-placeholder" style="display:none">${escapeHtml(initials)}</div>`
         : `<div class="avatar-placeholder">${escapeHtml(initials)}</div>`;
 
       return `
@@ -163,7 +163,7 @@ function attachEventListeners(): void {
 
       try {
         await app.callServerTool({
-          name: 'twitter_dismiss_conversation',
+          name: 'x_dismiss_conversation',
           arguments: {
             tweet_id: tweetId,
             reply_count: replyCount,
@@ -212,10 +212,10 @@ function attachEventListeners(): void {
       btn.textContent = 'Posting...';
 
       try {
-        console.log('[ASSA] Calling twitter_post_tweet...');
+        console.log('[ASSA] Calling x_post_tweet...');
         // Post the reply directly
         const result = await app.callServerTool({
-          name: 'twitter_post_tweet',
+          name: 'x_post_tweet',
           arguments: {
             text: replyText,
             reply_to_id: tweetId,
@@ -283,7 +283,7 @@ function attachEventListeners(): void {
             setTimeout(async () => {
               try {
                 await app.callServerTool({
-                  name: 'twitter_dismiss_conversation',
+                  name: 'x_dismiss_conversation',
                   arguments: {
                     tweet_id: tweetId,
                     reply_count: replyCount + 1, // Increment so it stays dismissed
@@ -330,7 +330,7 @@ refreshBtn.addEventListener('click', async () => {
 
   try {
     const result = await app.callServerTool({
-      name: 'twitter_conversations',
+      name: 'x_conversations',
       arguments: {},
     });
 

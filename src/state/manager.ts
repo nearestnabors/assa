@@ -13,14 +13,14 @@ interface DismissedTweet {
 }
 
 interface AssaState {
-  twitter_username: string | null;
+  x_username: string | null;
   dismissed: Record<string, DismissedTweet>;
   vips: string[];
   last_checked: string | null;
 }
 
 const DEFAULT_STATE: AssaState = {
-  twitter_username: null,
+  x_username: null,
   dismissed: {},
   vips: [],
   last_checked: null,
@@ -58,8 +58,9 @@ export function loadState(): AssaState {
     const parsed = JSON.parse(content) as Partial<AssaState>;
 
     // Merge with defaults to handle missing fields
+    // Support both old (twitter_username) and new (x_username) field names for migration
     cachedState = {
-      twitter_username: parsed.twitter_username ?? null,
+      x_username: parsed.x_username ?? (parsed as Record<string, unknown>).twitter_username as string ?? null,
       dismissed: parsed.dismissed ?? {},
       vips: parsed.vips ?? [],
       last_checked: parsed.last_checked ?? null,
@@ -91,20 +92,20 @@ export function saveState(): void {
 }
 
 /**
- * Get the stored Twitter username
+ * Get the stored X username
  */
 export function getUsername(): string | null {
   const state = loadState();
-  return state.twitter_username;
+  return state.x_username;
 }
 
 /**
- * Set the Twitter username
+ * Set the X username
  */
 export function setUsername(username: string): void {
   const state = loadState();
   // Remove @ prefix if provided
-  state.twitter_username = username.replace(/^@/, '');
+  state.x_username = username.replace(/^@/, '');
   saveState();
 }
 

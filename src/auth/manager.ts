@@ -7,7 +7,7 @@
  * Auth Response Format:
  * {
  *   authRequired: true,
- *   service: "Twitter",
+ *   service: "X",
  *   authUrl: "https://...",
  *   message: "..."
  * }
@@ -46,7 +46,7 @@ async function createAuthResponse(
     console.error('[ASSA Auth] Using existing OAuth URL from error');
     const authData: AuthRequiredResponse = {
       authRequired: true,
-      service: 'Twitter',
+      service: 'X',
       authUrl: existingAuthUrl,
       state: existingState || '',
       message,
@@ -79,7 +79,7 @@ async function createAuthResponse(
             text: JSON.stringify({
               error: true,
               message:
-                'Your Twitter connection needs to be refreshed. ' +
+                'Your X connection needs to be refreshed. ' +
                 'Please try again in a few minutes, or restart the app to reconnect.',
             }),
           },
@@ -106,7 +106,7 @@ async function createAuthResponse(
 
     const authData: AuthRequiredResponse = {
       authRequired: true,
-      service: 'Twitter',
+      service: 'X',
       authUrl: oauthUrl,
       state: state,
       message,
@@ -151,7 +151,7 @@ export async function ensureAuth(): Promise<unknown | null> {
   }
 
   return createAuthResponse(
-    'You need to connect your Twitter account first. Click the button below to authorize.'
+    'You need to connect your X account first. Click the button below to authorize.'
   );
 }
 
@@ -181,7 +181,7 @@ export async function handleToolError(error: unknown): Promise<unknown> {
     // Don't use the URL from the error - it might only have read scopes
     console.error('[ASSA Auth] Initiating fresh auth flow with full permissions');
     return createAuthResponse(
-      'You need to connect your Twitter account first. Click the button below to authorize.'
+      'You need to connect your X account first. Click the button below to authorize.'
     );
   }
 
@@ -194,7 +194,7 @@ export async function handleToolError(error: unknown): Promise<unknown> {
     console.error('[ASSA Auth] Auth-related error message detected');
     clearAuthCache();
     return createAuthResponse(
-      'Your Twitter authorization has expired or needs additional permissions. Please re-authorize to continue.'
+      'Your X authorization has expired or needs additional permissions. Please re-authorize to continue.'
     );
   }
 

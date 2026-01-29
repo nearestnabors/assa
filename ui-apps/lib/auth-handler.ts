@@ -151,7 +151,7 @@ export function renderAuthRequired(
 
     try {
       const result = await app.callServerTool({
-        name: 'twitter_auth_status',
+        name: 'x_auth_status',
         arguments: {},
       });
 

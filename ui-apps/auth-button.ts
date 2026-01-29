@@ -79,7 +79,7 @@ checkBtn.addEventListener('click', async () => {
   try {
     // Call the auth status tool directly via MCP Apps
     const result = await app.callServerTool({
-      name: 'twitter_auth_status',
+      name: 'x_auth_status',
       arguments: {},
     });
 
@@ -94,7 +94,7 @@ checkBtn.addEventListener('click', async () => {
         // Automatically load conversations after successful auth
         try {
           await app.callServerTool({
-            name: 'twitter_conversations',
+            name: 'x_conversations',
             arguments: {},
           });
         } catch (convError) {

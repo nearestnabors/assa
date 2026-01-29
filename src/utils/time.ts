@@ -2,17 +2,17 @@
  * Time utility functions
  */
 
-// Twitter snowflake epoch (Nov 4, 2010 01:42:54.657 UTC)
-const TWITTER_EPOCH = 1288834974657n;
+// X snowflake epoch (Nov 4, 2010 01:42:54.657 UTC)
+const X_EPOCH = 1288834974657n;
 
 /**
- * Extract timestamp from a Twitter snowflake ID
- * Twitter IDs contain the timestamp in the high bits
+ * Extract timestamp from an X snowflake ID
+ * X IDs contain the timestamp in the high bits
  */
 export function timestampFromSnowflake(snowflakeId: string): Date | null {
   try {
     const id = BigInt(snowflakeId);
-    const timestampMs = Number((id >> 22n) + TWITTER_EPOCH);
+    const timestampMs = Number((id >> 22n) + X_EPOCH);
     return new Date(timestampMs);
   } catch {
     return null;

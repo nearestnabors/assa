@@ -116,7 +116,7 @@ editBtn.addEventListener('click', async () => {
   });
 });
 
-// Post button - call twitter_post_tweet directly
+// Post button - call x_post_tweet directly
 postBtn.addEventListener('click', async () => {
   if (!draft) return;
 
@@ -125,7 +125,7 @@ postBtn.addEventListener('click', async () => {
 
   try {
     const result = await app.callServerTool({
-      name: 'twitter_post_tweet',
+      name: 'x_post_tweet',
       arguments: {
         text: draft.text,
         reply_to_id: draft.replyTo?.id,

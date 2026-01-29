@@ -1,7 +1,7 @@
 /**
  * Arcade.dev API Client
  *
- * Uses the official @arcadeai/arcadejs SDK for Twitter/X OAuth and API calls.
+ * Uses the official @arcadeai/arcadejs SDK for X OAuth and API calls.
  *
  * Key insight: When a tool execution requires auth, the SDK returns
  * `output.authorization` with the OAuth URL directly - no separate call needed.
@@ -12,7 +12,7 @@ import type { AuthorizationResponse } from '@arcadeai/arcadejs/resources';
 import { appendFileSync, readFileSync, writeFileSync, existsSync } from 'fs';
 import { setUsername as setPersistentUsername } from '../state/manager.js';
 
-// Types for Twitter data
+// Types for X data
 export interface Mention {
   id: string;
   author: {
