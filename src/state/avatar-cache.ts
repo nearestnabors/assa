@@ -148,8 +148,8 @@ export async function getAvatar(
     return cached;
   }
 
-  // Use provided URL or fall back to unavatar.io
-  const urlToFetch = profileImageUrl || `https://unavatar.io/twitter/${username}`;
+  // Use provided URL or fall back to unavatar.io (small size to reduce response payload)
+  const urlToFetch = profileImageUrl || `https://unavatar.io/twitter/${username}?size=48`;
 
   // Fetch and cache
   const dataUrl = await fetchImageAsDataUrl(urlToFetch);
