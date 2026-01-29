@@ -12,6 +12,7 @@ import {
   pruneExpiredDismissals,
   updateLastChecked,
 } from '../state/manager.js';
+import { getAvatars, pruneExpiredAvatars, pruneStaleAvatars } from '../state/avatar-cache.js';
 import { timestampFromSnowflake } from '../utils/time.js';
 import { executeTool, AuthRequiredError } from '../arcade/client.js';
 
@@ -83,10 +84,11 @@ interface ConversationItem {
  * Fetches unreplied mentions and returns data for the conversation list UI
  */
 export async function twitterConversations(): Promise<unknown> {
-  // Clean up dismissed entries for tweets older than 7 days (X's search limit)
-  const prunedCount = pruneExpiredDismissals();
-  if (prunedCount > 0) {
-    debugLog(`Pruned ${prunedCount} expired dismissed tweets`);
+  // Clean up expired entries
+  const prunedDismissals = pruneExpiredDismissals();
+  const prunedAvatars = pruneExpiredAvatars();
+  if (prunedDismissals > 0 || prunedAvatars > 0) {
+    debugLog(`Pruned ${prunedDismissals} expired dismissals, ${prunedAvatars} expired avatars`);
   }
 
   const username = getUsername();
@@ -259,6 +261,38 @@ export async function twitterConversations(): Promise<unknown> {
     conversations.sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
+
+    // Fetch avatars for all unique users (uses cache or fetches from X)
+    const uniqueUsers = new Map<string, string | undefined>();
+    for (const conv of conversations) {
+      if (!uniqueUsers.has(conv.author_username)) {
+        uniqueUsers.set(conv.author_username, conv.author_avatar_url);
+      }
+    }
+
+    const usersToFetch = Array.from(uniqueUsers.entries()).map(([username, url]) => ({
+      username,
+      profileImageUrl: url,
+    }));
+
+    debugLog(`Fetching avatars for ${usersToFetch.length} users`);
+    const avatarMap = await getAvatars(usersToFetch);
+    debugLog(`Got ${Object.keys(avatarMap).length} avatars`);
+
+    // Update conversations with cached data URLs
+    for (const conv of conversations) {
+      const dataUrl = avatarMap[conv.author_username.toLowerCase()];
+      if (dataUrl) {
+        conv.author_avatar_url = dataUrl;
+      }
+    }
+
+    // Prune avatars for users no longer in conversations
+    const activeUsernames = conversations.map((c) => c.author_username);
+    const prunedStale = pruneStaleAvatars(activeUsernames);
+    if (prunedStale > 0) {
+      debugLog(`Pruned ${prunedStale} stale avatars`);
+    }
 
     // Update last checked timestamp
     updateLastChecked();

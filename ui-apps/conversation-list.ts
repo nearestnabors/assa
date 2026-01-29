@@ -107,12 +107,10 @@ function renderConversations(data: ConversationsData): void {
       const relativeTime = formatRelativeTime(conv.created_at);
       const initials = getInitials(conv.author_display_name || conv.author_username || '?');
 
-      // Use unavatar.io to fetch Twitter avatars by username (with initials fallback on error)
-      const avatarUrl = conv.author_avatar_url ||
-        (conv.author_username ? `https://unavatar.io/twitter/${conv.author_username}` : '');
-
-      const avatarHtml = avatarUrl
-        ? `<img class="avatar" src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(conv.author_display_name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="avatar-placeholder" style="display:none">${escapeHtml(initials)}</div>`
+      // Use data URL avatars if available (CSP allows data:), otherwise use initials
+      const hasDataUrl = conv.author_avatar_url?.startsWith('data:');
+      const avatarHtml = hasDataUrl
+        ? `<img class="avatar" src="${escapeHtml(conv.author_avatar_url!)}" alt="${escapeHtml(conv.author_display_name)}">`
         : `<div class="avatar-placeholder">${escapeHtml(initials)}</div>`;
 
       return `
