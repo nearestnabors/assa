@@ -88,20 +88,27 @@ checkBtn.addEventListener('click', async () => {
     if (textContent && 'text' in textContent) {
       const text = textContent.text as string;
       if (text.includes('connected')) {
-        statusText.textContent = 'Authorization successful!';
+        statusText.textContent = 'Authorization successful! Ask me to show your conversations.';
         statusText.style.color = '#22c55e';
         checkBtn.textContent = 'Connected ✓';
 
-        // Notify the agent to load conversations
-        // Using updateModelContext prompts the agent to take action
-        await app.updateModelContext({
-          content: [
-            {
-              type: 'text',
-              text: 'X authorization completed successfully. Please use the x_conversations tool to show my conversations.',
-            },
-          ],
-        });
+        // Try to prompt the agent to load conversations
+        // Use sendMessage to add a message to the conversation
+        try {
+          await app.sendMessage({
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: 'Show my X conversations',
+              },
+            ],
+          });
+        } catch (msgError) {
+          // sendMessage not supported by this host - that's ok
+          // User can manually ask for conversations
+          console.log('[Auth Button] sendMessage not supported:', msgError);
+        }
       } else {
         statusText.textContent = 'Authorization not detected. Please try again.';
         (checkBtn as HTMLButtonElement).disabled = false;
