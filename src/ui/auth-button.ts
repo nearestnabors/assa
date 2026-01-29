@@ -141,7 +141,7 @@ export function createAuthButtonUI(params: AuthButtonParams): string {
       window.parent.postMessage({
         type: 'prompt',
         payload: {
-          prompt: 'I just completed ${escapeHtml(service)} OAuth in my browser. Use the ${escapeHtml(service).toLowerCase()}_auth_status tool to verify it worked.'
+          prompt: 'I just completed ${escapeHtml(service)} OAuth in my browser. Use the twitter_auth_status tool to verify it worked.'
         }
       }, '*');
 
