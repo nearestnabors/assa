@@ -239,8 +239,9 @@ export function createServer(): Server {
       text: html,
     };
 
-    // Add CSP for conversation list to allow loading avatars from unavatar.io
-    if (uri === UI_RESOURCES.conversationList) {
+    // Add CSP for UIs that load avatars from unavatar.io
+    // auth-button also renders conversations after auth completes
+    if (uri === UI_RESOURCES.conversationList || uri === UI_RESOURCES.authButton) {
       resourceContent._meta = {
         ui: {
           csp: {
