@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { homedir } from 'os';
 import { join } from 'path';
+import { timestampFromSnowflake } from '../utils/time.js';
 
 // State file location: ~/.config/assa/state.json
 const CONFIG_DIR = join(homedir(), '.config', 'assa');
@@ -150,6 +151,32 @@ export function undismissTweet(tweetId: string): void {
   const state = loadState();
   delete state.dismissed[tweetId];
   saveState();
+}
+
+/**
+ * Prune dismissed tweets older than 7 days
+ * X's search API only returns tweets from the last 7 days,
+ * so older dismissed entries will never be needed again
+ */
+export function pruneExpiredDismissals(): number {
+  const state = loadState();
+  const now = Date.now();
+  const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+  let prunedCount = 0;
+
+  for (const tweetId of Object.keys(state.dismissed)) {
+    const tweetDate = timestampFromSnowflake(tweetId);
+    if (tweetDate && now - tweetDate.getTime() > sevenDaysMs) {
+      delete state.dismissed[tweetId];
+      prunedCount++;
+    }
+  }
+
+  if (prunedCount > 0) {
+    saveState();
+  }
+
+  return prunedCount;
 }
 
 /**

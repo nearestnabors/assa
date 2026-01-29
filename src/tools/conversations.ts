@@ -1,6 +1,6 @@
 import { createUIResource } from '@mcp-ui/server';
 import { appendFileSync } from 'fs';
-import { getUsername, isDismissed, updateLastChecked } from '../state/manager.js';
+import { getUsername, isDismissed, pruneExpiredDismissals, updateLastChecked } from '../state/manager.js';
 import { createConversationListUI, type ConversationItem } from '../ui/conversation-list.js';
 import { timestampFromSnowflake } from '../utils/time.js';
 
@@ -121,6 +121,12 @@ interface SearchResponse {
  * Fetches unreplied mentions and presents them as a conversation inbox
  */
 export async function twitterConversations(): Promise<unknown> {
+  // Clean up dismissed entries for tweets older than 7 days (X's search limit)
+  const prunedCount = pruneExpiredDismissals();
+  if (prunedCount > 0) {
+    debugLog(`Pruned ${prunedCount} expired dismissed tweets`);
+  }
+
   const username = getUsername();
 
   // Check if username is set
