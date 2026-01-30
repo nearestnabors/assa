@@ -13,7 +13,7 @@
     "dev": "tsx watch src/index.ts",
     "build:ui": "rm -rf dist/ui && mkdir -p dist/ui && VITE_INPUT=auth-button.html vite build && VITE_INPUT=tweet-preview.html vite build && VITE_INPUT=conversation-list.html vite build",
     "build:server": "tsc",
-    "build": "pnpm run build:ui && pnpm run build:server",
+    "build": "bun run build:ui && bun run build:server",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
     "check": "biome check .",
@@ -37,7 +37,8 @@
     "vite-plugin-singlefile": "^2.0.3"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=20.0.0",
+    "bun": ">=1.0.0"
   },
   "keywords": [
     "mcp",
