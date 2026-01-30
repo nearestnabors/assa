@@ -145,9 +145,7 @@ interface WhoAmIUserData {
 }
 
 interface WhoAmIResponse {
-  value: {
-    data: WhoAmIUserData;
-  };
+  data?: WhoAmIUserData;
 }
 
 interface ArcadeClient {
@@ -276,7 +274,7 @@ async function checkPendingAuth(): Promise<{
     try {
       const whoami = await executeTool<WhoAmIResponse>("X.WhoAmI", {});
       log("X.WhoAmI after auth:", whoami);
-      const username = whoami.value?.data?.username;
+      const username = whoami.data?.username;
       if (username) {
         authenticatedUsername = username;
         setPersistentUsername(username);
@@ -335,7 +333,7 @@ async function fetchAuthViaWhoAmI(): Promise<{
     const whoami = await executeTool<WhoAmIResponse>("X.WhoAmI", {});
     log("X.WhoAmI succeeded:", whoami);
 
-    const username = whoami.value?.data?.username;
+    const username = whoami.data?.username;
     if (username) {
       authenticatedUsername = username;
       setPersistentUsername(username);
@@ -431,7 +429,7 @@ const realArcadeClient: ArcadeClient = {
       const whoami = await executeTool<WhoAmIResponse>("X.WhoAmI", {});
       log("X.WhoAmI response:", whoami);
 
-      const username = whoami.value?.data?.username;
+      const username = whoami.data?.username;
       if (username) {
         authenticatedUsername = username;
         setPersistentUsername(username);
@@ -552,12 +550,10 @@ const realArcadeClient: ArcadeClient = {
   },
 
   async postTweet({ text, reply_to_id, quote_tweet_id }) {
-    // The Arcade API returns different structures - try common patterns
-    interface TweetResponse {
-      id?: string;
-      data?: { id?: string };
-      tweet_id?: string;
-    }
+    // The Arcade API can return either an object or a string message
+    type TweetResponse =
+      | string
+      | { id?: string; data?: { id?: string }; tweet_id?: string };
 
     let response: TweetResponse;
 
@@ -576,14 +572,43 @@ const realArcadeClient: ArcadeClient = {
 
     log("Post tweet response:", response);
 
-    // Try different response structures
-    const tweetId =
-      response.id || response.data?.id || response.tweet_id || "unknown";
+    let tweetId = "unknown";
+    let tweetUrl = "";
+
+    // Handle string response: "Tweet with id XXXXX posted successfully. URL: https://x.com/..."
+    if (typeof response === "string") {
+      // Try to extract URL from the string
+      const urlMatch = response.match(/URL:\s*(https:\/\/[^\s]+)/i);
+      if (urlMatch) {
+        tweetUrl = urlMatch[1];
+        // Extract ID from URL
+        const idMatch = tweetUrl.match(/status\/(\d+)/);
+        if (idMatch) {
+          tweetId = idMatch[1];
+        }
+      }
+      // Fallback: try to extract ID directly from message
+      if (tweetId === "unknown") {
+        const idMatch = response.match(/id\s+(\d+)/i);
+        if (idMatch) {
+          tweetId = idMatch[1];
+        }
+      }
+    } else if (response && typeof response === "object") {
+      // Handle object response
+      tweetId = response.id || response.data?.id || response.tweet_id || "unknown";
+    }
+
     log("Extracted tweet ID:", tweetId);
+
+    // Use the extracted URL or construct one
+    if (!tweetUrl && tweetId !== "unknown") {
+      tweetUrl = `https://x.com/i/status/${tweetId}`;
+    }
 
     return {
       id: tweetId,
-      url: `https://twitter.com/i/status/${tweetId}`,
+      url: tweetUrl || `https://x.com/i/status/${tweetId}`,
     };
   },
 };
@@ -615,15 +640,13 @@ const mockArcadeClient: ArcadeClient = {
   getAuthenticatedUser() {
     if (mockAuthState.authorized) {
       return Promise.resolve({
-        value: {
-          data: {
-            id: "12345",
-            username: mockAuthState.username || "demo_user",
-            name: "Demo User",
-            description: "A demo user for testing",
-            profile_image_url:
-              "https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png",
-          },
+        data: {
+          id: "12345",
+          username: mockAuthState.username || "demo_user",
+          name: "Demo User",
+          description: "A demo user for testing",
+          profile_image_url:
+            "https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png",
         },
       });
     }

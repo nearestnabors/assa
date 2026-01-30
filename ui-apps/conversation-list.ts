@@ -295,11 +295,18 @@ function attachEventListeners(): void {
 
             // Handle the "View on X" button click via openExternalLink helper
             const viewBtn = replyBox.querySelector('.reply-sent-link') as HTMLButtonElement;
+            console.log('[ASSA] View button found:', !!viewBtn, 'URL:', viewBtn?.dataset?.url);
             if (viewBtn) {
               viewBtn.addEventListener('click', async () => {
                 const url = viewBtn.dataset.url;
+                console.log('[ASSA] View button clicked, URL:', url);
                 if (url) {
-                  await openExternalLink(app, url);
+                  try {
+                    await openExternalLink(app, url);
+                    console.log('[ASSA] openExternalLink completed');
+                  } catch (err) {
+                    console.error('[ASSA] openExternalLink failed:', err);
+                  }
                 }
               });
             }
@@ -344,7 +351,14 @@ app.ontoolresult = async () => {
     });
     const textContent = result.content?.find((c: { type: string }) => c.type === 'text');
     if (textContent && 'text' in textContent) {
-      const data = JSON.parse(textContent.text as string) as ConversationsData;
+      const data = JSON.parse(textContent.text as string) as ConversationsData & { error?: boolean; message?: string };
+
+      // Check for error response
+      if (data.error) {
+        loadingEl.textContent = data.message || 'Please authenticate first';
+        return;
+      }
+
       renderConversations(data);
     }
   } catch (error) {

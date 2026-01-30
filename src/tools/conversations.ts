@@ -364,7 +364,20 @@ export async function xGetConversations(): Promise<unknown> {
   const result = await fetchConversations();
 
   if (!result.success) {
-    return result.content;
+    // Return JSON error so UI can parse it
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({
+            error: true,
+            message: 'Please authenticate with x_auth_status first',
+            conversations: [],
+            username: '',
+          }),
+        },
+      ],
+    };
   }
 
   return {

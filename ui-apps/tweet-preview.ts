@@ -202,11 +202,16 @@ async function postTweet(): Promise<void> {
       parsed.isError ||
       (data && typeof data === "object" && "error" in data)
     ) {
-      throw new Error(
-        typeof data === "object" && data && "error" in data
-          ? String(data.error)
-          : "Failed to post"
-      );
+      // Get error message from data.message, data.error (if string), or fallback
+      let errorMsg = "Failed to post";
+      if (data && typeof data === "object") {
+        if ("message" in data && typeof data.message === "string") {
+          errorMsg = data.message;
+        } else if ("error" in data && typeof data.error === "string") {
+          errorMsg = data.error;
+        }
+      }
+      throw new Error(errorMsg);
     }
 
     // Success

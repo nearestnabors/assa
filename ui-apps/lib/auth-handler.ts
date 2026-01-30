@@ -17,13 +17,16 @@ import type { App } from "@modelcontextprotocol/ext-apps";
  * Usage: await openExternalLink(app, 'https://example.com')
  */
 export async function openExternalLink(app: App, url: string): Promise<void> {
+  console.log("[MCP Apps] openExternalLink called with URL:", url);
   if (!url || typeof url !== "string") {
     console.error("[MCP Apps] Invalid URL provided to openExternalLink:", url);
     return;
   }
   try {
     // MCP Apps SDK expects { url: string } object, NOT just a string
-    await app.openLink({ url });
+    console.log("[MCP Apps] Calling app.openLink...");
+    const result = await app.openLink({ url });
+    console.log("[MCP Apps] app.openLink result:", result);
   } catch (error) {
     console.error("[MCP Apps] Failed to open external link:", error);
     throw error;
