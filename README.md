@@ -21,7 +21,7 @@ ASSA reclaims the social web by:
 
 ### Prerequisites
 
-- Node.js 20+
+- [Bun](https://bun.sh) 1.0+ (or Node.js 20+)
 - [Goose](https://github.com/block/goose) (or another MCP-compatible agent)
 - [Arcade.dev](https://arcade.dev) API key
 
@@ -33,8 +33,8 @@ ASSA reclaims the social web by:
    ```bash
    git clone https://github.com/YOUR_USERNAME/assa-mcp
    cd assa-mcp
-   pnpm install
-   pnpm build
+   bun install
+   bun run build
    ```
 
 3. Add to Goose (see below)
