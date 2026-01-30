@@ -1,0 +1,17 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.3.13/schema.json",
+  "extends": ["ultracite/biome/core"],
+  "files": {
+    "includes": ["!!*.html"]
+  },
+  "linter": {
+    "rules": {
+      "style": {
+        "noNonNullAssertion": "off"
+      },
+      "suspicious": {
+        "noBitwiseOperators": "off"
+      }
+    }
+  }
+}

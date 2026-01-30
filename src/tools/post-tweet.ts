@@ -6,8 +6,8 @@
  * (280 for free tier, 25,000 for X Premium).
  */
 
-import { arcadeClient } from '../arcade/client.js';
-import { handleToolError } from '../auth/manager.js';
+import { arcadeClient } from "../arcade/client.js";
+import { handleToolError } from "../auth/manager.js";
 
 interface PostTweetArgs {
   text: string;
@@ -18,7 +18,8 @@ interface PostTweetArgs {
 export async function xPostTweet(
   args: Record<string, unknown>
 ): Promise<unknown> {
-  const { text, reply_to_id, quote_tweet_id } = args as unknown as PostTweetArgs;
+  const { text, reply_to_id, quote_tweet_id } =
+    args as unknown as PostTweetArgs;
 
   // Don't pre-check auth - let the tool execution handle it.
   // The Arcade SDK will return auth info if needed, and handleToolError
@@ -39,7 +40,7 @@ export async function xPostTweet(
     return {
       content: [
         {
-          type: 'text',
+          type: "text",
           text: JSON.stringify({
             success: true,
             text,

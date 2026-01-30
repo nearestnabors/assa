@@ -1,16 +1,16 @@
-import { defineConfig } from 'vite';
-import { viteSingleFile } from 'vite-plugin-singlefile';
-import { resolve } from 'path';
+import { resolve } from "node:path";
+import { defineConfig } from "vite";
+import { viteSingleFile } from "vite-plugin-singlefile";
 
 // Get the input file from environment variable
 const inputFile = process.env.VITE_INPUT;
 
 if (!inputFile) {
-  throw new Error('VITE_INPUT environment variable is required');
+  throw new Error("VITE_INPUT environment variable is required");
 }
 
 // Extract name without extension for output directory
-const baseName = inputFile.replace('.html', '');
+const baseName = inputFile.replace(".html", "");
 
 export default defineConfig({
   plugins: [viteSingleFile()],

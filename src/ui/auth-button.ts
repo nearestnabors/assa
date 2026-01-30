@@ -7,12 +7,12 @@
  * 3. Fires 'tool' action to check auth status (server-side)
  */
 
-import { escapeHtml } from '../utils/html.js';
+import { escapeHtml } from "../utils/html.js";
 
 interface AuthButtonParams {
-  service: string;      // "Twitter"
-  authUrl: string;      // OAuth URL from Arcade
-  state: string;        // State param for status check
+  service: string; // "Twitter"
+  authUrl: string; // OAuth URL from Arcade
+  state: string; // State param for status check
 }
 
 export function createAuthButtonUI(params: AuthButtonParams): string {
