@@ -25,7 +25,7 @@ import { fileURLToPath } from 'url';
 import { xAuthStatus } from './tools/auth-status.js';
 import { xDraftTweet } from './tools/draft-tweet.js';
 import { xPostTweet } from './tools/post-tweet.js';
-import { xConversations } from './tools/conversations.js';
+import { xConversations, xGetConversations } from './tools/conversations.js';
 import { xDismissConversation } from './tools/dismiss-conversation.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -165,7 +165,7 @@ const toolHandlers: Record<string, ToolHandler> = {
   x_draft_tweet: xDraftTweet,
   x_post_tweet: xPostTweet,
   x_conversations: xConversations,
-  x_get_conversations: xConversations, // Same handler, UI calls this to get data
+  x_get_conversations: xGetConversations, // UI-only, returns full data
   x_dismiss_conversation: xDismissConversation,
 };
 

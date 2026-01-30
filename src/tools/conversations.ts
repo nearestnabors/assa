@@ -82,7 +82,12 @@ interface ConversationItem {
  * Tool: x_conversations
  * Fetches unreplied mentions and returns data for the conversation list UI
  */
-export async function xConversations(): Promise<unknown> {
+type FetchResult =
+  | { success: true; data: { conversations: ConversationItem[]; username: string } }
+  | { success: false; content: unknown };
+
+// Internal function that fetches and returns conversation data
+async function fetchConversations(): Promise<FetchResult> {
   // Clean up expired dismissals
   const prunedDismissals = pruneExpiredDismissals();
   if (prunedDismissals > 0) {
@@ -94,12 +99,15 @@ export async function xConversations(): Promise<unknown> {
   // Check if username is set
   if (!username) {
     return {
-      content: [
-        {
-          type: 'text',
-          text: `I need your X username to find your conversations.\n\nPlease check your auth status with x_auth_status first - your username should be detected automatically after authentication.`,
-        },
-      ],
+      success: false,
+      content: {
+        content: [
+          {
+            type: 'text',
+            text: `I need your X username to find your conversations.\n\nPlease check your auth status with x_auth_status first - your username should be detected automatically after authentication.`,
+          },
+        ],
+      },
     };
   }
 
@@ -127,19 +135,12 @@ export async function xConversations(): Promise<unknown> {
     });
 
     if (mentions.length === 0) {
-      // Return empty conversation data for UI
-      const emptyData = {
-        conversations: [],
-        username,
-      };
-
       return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(emptyData),
-          },
-        ],
+        success: true,
+        data: {
+          conversations: [],
+          username,
+        },
       };
     }
 
@@ -269,19 +270,12 @@ export async function xConversations(): Promise<unknown> {
     // Update last checked timestamp
     updateLastChecked();
 
-    // Return JSON data for the conversation-list UI app
-    const conversationsData = {
-      conversations,
-      username,
-    };
-
     return {
-      content: [
-        {
-          type: 'text',
-          text: JSON.stringify(conversationsData),
-        },
-      ],
+      success: true,
+      data: {
+        conversations,
+        username,
+      },
     };
   } catch (error) {
     console.error('[ASSA] Error fetching conversations:', error);
@@ -289,13 +283,16 @@ export async function xConversations(): Promise<unknown> {
     // Check for auth errors using AuthRequiredError
     if (error instanceof AuthRequiredError) {
       return {
-        content: [
-          {
-            type: 'text',
-            text: `X authorization required. Please use the x_auth_status tool to connect your account.`,
-          },
-        ],
-        isError: true,
+        success: false,
+        content: {
+          content: [
+            {
+              type: 'text',
+              text: `X authorization required. Please use the x_auth_status tool to connect your account.`,
+            },
+          ],
+          isError: true,
+        },
       };
     }
 
@@ -307,24 +304,75 @@ export async function xConversations(): Promise<unknown> {
       errorMessage.toLowerCase().includes('unauthorized')
     ) {
       return {
-        content: [
-          {
-            type: 'text',
-            text: `X authorization required. Please use the x_auth_status tool to connect your account.`,
-          },
-        ],
-        isError: true,
+        success: false,
+        content: {
+          content: [
+            {
+              type: 'text',
+              text: `X authorization required. Please use the x_auth_status tool to connect your account.`,
+            },
+          ],
+          isError: true,
+        },
       };
     }
 
     return {
-      content: [
-        {
-          type: 'text',
-          text: `Error fetching conversations: ${errorMessage}`,
-        },
-      ],
-      isError: true,
+      success: false,
+      content: {
+        content: [
+          {
+            type: 'text',
+            text: `Error fetching conversations: ${errorMessage}`,
+          },
+        ],
+        isError: true,
+      },
     };
   }
+}
+
+/**
+ * Tool: x_conversations (for agent)
+ * Returns a brief message - UI fetches full data via x_get_conversations
+ */
+export async function xConversations(): Promise<unknown> {
+  const result = await fetchConversations();
+
+  if (!result.success) {
+    return result.content;
+  }
+
+  const count = result.data.conversations.length;
+  return {
+    content: [
+      {
+        type: 'text',
+        text: count === 0
+          ? 'No conversations awaiting your reply.'
+          : `${count} conversation${count === 1 ? '' : 's'} awaiting your reply.`,
+      },
+    ],
+  };
+}
+
+/**
+ * Tool: x_get_conversations (for UI only, hidden from model)
+ * Returns full conversation data as JSON
+ */
+export async function xGetConversations(): Promise<unknown> {
+  const result = await fetchConversations();
+
+  if (!result.success) {
+    return result.content;
+  }
+
+  return {
+    content: [
+      {
+        type: 'text',
+        text: JSON.stringify(result.data),
+      },
+    ],
+  };
 }
