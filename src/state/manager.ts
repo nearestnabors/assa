@@ -18,6 +18,7 @@ interface DismissedTweet {
 interface AssaState {
   x_username: string | null;
   dismissed: Record<string, DismissedTweet>;
+  replied_to: string[]; // Tweet IDs we've replied to via ASSA
   vips: string[];
   last_checked: string | null;
 }
@@ -25,6 +26,7 @@ interface AssaState {
 const DEFAULT_STATE: AssaState = {
   x_username: null,
   dismissed: {},
+  replied_to: [],
   vips: [],
   last_checked: null,
 };
@@ -68,6 +70,7 @@ export function loadState(): AssaState {
         ((parsed as Record<string, unknown>).twitter_username as string) ??
         null,
       dismissed: parsed.dismissed ?? {},
+      replied_to: parsed.replied_to ?? [],
       vips: parsed.vips ?? [],
       last_checked: parsed.last_checked ?? null,
     };
@@ -161,6 +164,48 @@ export function undismissTweet(tweetId: string): void {
   const state = loadState();
   delete state.dismissed[tweetId];
   saveState();
+}
+
+/**
+ * Mark a tweet as replied to (via ASSA)
+ * This is used to filter out tweets we've already replied to
+ * since the Arcade API doesn't return referenced_tweets
+ */
+export function markReplied(tweetId: string): void {
+  const state = loadState();
+  if (!state.replied_to.includes(tweetId)) {
+    state.replied_to.push(tweetId);
+    saveState();
+  }
+}
+
+/**
+ * Check if we've replied to a tweet via ASSA
+ */
+export function isRepliedTo(tweetId: string): boolean {
+  const state = loadState();
+  return state.replied_to.includes(tweetId);
+}
+
+/**
+ * Prune replied-to entries that are no longer in the API results
+ * This is called after fetching mentions - if a tweet ID in replied_to
+ * isn't in the current mention results, it's been deleted or is too old
+ */
+export function pruneStaleReplies(currentMentionIds: string[]): number {
+  const state = loadState();
+  const currentSet = new Set(currentMentionIds);
+  const initialLength = state.replied_to.length;
+
+  // Keep only IDs that are still in the current API results
+  state.replied_to = state.replied_to.filter((tweetId) => currentSet.has(tweetId));
+
+  const prunedCount = initialLength - state.replied_to.length;
+  if (prunedCount > 0) {
+    saveState();
+  }
+
+  return prunedCount;
 }
 
 /**

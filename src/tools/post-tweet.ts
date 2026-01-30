@@ -8,6 +8,7 @@
 
 import { arcadeClient } from "../arcade/client.js";
 import { handleToolError } from "../auth/manager.js";
+import { markReplied } from "../state/manager.js";
 
 interface PostTweetArgs {
   text: string;
@@ -35,6 +36,11 @@ export async function xPostTweet(
       reply_to_id,
       quote_tweet_id,
     });
+
+    // Mark the tweet as replied-to in local state (for filtering)
+    if (reply_to_id) {
+      markReplied(reply_to_id);
+    }
 
     // Return JSON for UI parsing
     return {

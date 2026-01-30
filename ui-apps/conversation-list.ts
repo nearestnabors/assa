@@ -182,7 +182,8 @@ function renderConversations(data: ConversationsData, append = false): void {
   // Attach event listeners to action buttons
   attachEventListeners();
 
-  // Defer image loading to allow CSP to be applied (race condition workaround)
+  // Defer image loading to allow CSP to be applied by host
+  // Extended delay to give MCP Apps SDK time to set up resourceDomains CSP
   setTimeout(() => {
     document.querySelectorAll('img[data-src]').forEach((img) => {
       const src = img.getAttribute('data-src');
@@ -197,7 +198,7 @@ function renderConversations(data: ConversationsData, append = false): void {
         });
       }
     });
-  }, 100);
+  }, 500);
 
   // Update load more button state
   updateLoadMoreButton(data);

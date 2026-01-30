@@ -9,7 +9,9 @@ import { appendFileSync } from 'fs';
 import {
   getUsername,
   isDismissed,
+  isRepliedTo,
   pruneExpiredDismissals,
+  pruneStaleReplies,
   updateLastChecked,
 } from '../state/manager.js';
 import { timestampFromSnowflake } from '../utils/time.js';
@@ -142,6 +144,13 @@ async function fetchConversations(options: FetchOptions = {}): Promise<FetchResu
       mentions,
     });
 
+    // Clean up replied_to entries that are no longer in the API results
+    const mentionIds = mentions.map((m) => m.id);
+    const prunedReplies = pruneStaleReplies(mentionIds);
+    if (prunedReplies > 0) {
+      debugLog(`Pruned ${prunedReplies} stale replied-to entries`);
+    }
+
     if (mentions.length === 0) {
       return {
         success: true,
@@ -218,8 +227,8 @@ async function fetchConversations(options: FetchOptions = {}): Promise<FetchResu
         continue;
       }
 
-      // Skip if user has already replied
-      if (repliedToIds.has(mention.id)) {
+      // Skip if user has already replied (via API or locally tracked)
+      if (repliedToIds.has(mention.id) || isRepliedTo(mention.id)) {
         skippedRepliedTo++;
         continue;
       }
@@ -286,7 +295,7 @@ async function fetchConversations(options: FetchOptions = {}): Promise<FetchResu
     );
 
     // Set avatar URLs to unavatar.io (external service)
-    // CSP configured in server.ts allows loading from this domain
+    // CSP configured in server.ts via resourceDomains - UI defers loading to allow CSP setup
     for (const conv of conversations) {
       conv.author_avatar_url = `https://unavatar.io/twitter/${conv.author_username}`;
     }
