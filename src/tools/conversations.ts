@@ -5,17 +5,17 @@
  * Uses the shared Arcade client for API calls.
  */
 
-import { appendFileSync } from 'fs';
+import { appendFileSync } from "node:fs";
+import { AuthRequiredError, executeTool } from "../arcade/client.js";
 import {
   getUsername,
   isDismissed,
   pruneExpiredDismissals,
   updateLastChecked,
-} from '../state/manager.js';
-import { timestampFromSnowflake } from '../utils/time.js';
-import { executeTool, AuthRequiredError } from '../arcade/client.js';
+} from "../state/manager.js";
+import { timestampFromSnowflake } from "../utils/time.js";
 
-const DEBUG_LOG = '/tmp/assa-conversations-debug.log';
+const DEBUG_LOG = "/tmp/assa-conversations-debug.log";
 function debugLog(message: string, data?: unknown) {
   const timestamp = new Date().toISOString();
   const line = data
@@ -83,10 +83,14 @@ interface ConversationItem {
  * Fetches unreplied mentions and returns data for the conversation list UI
  */
 type FetchResult =
-  | { success: true; data: { conversations: ConversationItem[]; username: string } }
+  | {
+      success: true;
+      data: { conversations: ConversationItem[]; username: string };
+    }
   | { success: false; content: unknown };
 
 // Internal function that fetches and returns conversation data
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Complex conversation fetching logic with many edge cases
 async function fetchConversations(): Promise<FetchResult> {
   // Clean up expired dismissals
   const prunedDismissals = pruneExpiredDismissals();
@@ -103,8 +107,8 @@ async function fetchConversations(): Promise<FetchResult> {
       content: {
         content: [
           {
-            type: 'text',
-            text: `I need your X username to find your conversations.\n\nPlease check your auth status with x_auth_status first - your username should be detected automatically after authentication.`,
+            type: "text",
+            text: "I need your X username to find your conversations.\n\nPlease check your auth status with x_auth_status first - your username should be detected automatically after authentication.",
           },
         ],
       },
@@ -117,7 +121,7 @@ async function fetchConversations(): Promise<FetchResult> {
     // 1. Search for tweets mentioning @username
     debugLog(`Searching for phrases: ["@${username}"]`);
     const mentionsResponse = await executeTool<SearchResponse>(
-      'X.SearchRecentTweetsByKeywords',
+      "X.SearchRecentTweetsByKeywords",
       {
         phrases: [`@${username}`],
         max_results: 50,
@@ -125,7 +129,7 @@ async function fetchConversations(): Promise<FetchResult> {
     );
 
     // Debug: Log the raw response structure to file
-    debugLog('Raw mentionsResponse:', mentionsResponse);
+    debugLog("Raw mentionsResponse:", mentionsResponse);
 
     const mentions = mentionsResponse.data || [];
     const mentionUsers = mentionsResponse.includes?.users || [];
@@ -146,7 +150,7 @@ async function fetchConversations(): Promise<FetchResult> {
 
     // 2. Search for user's own tweets (to find replies they've made)
     const userTweetsResponse = await executeTool<SearchResponse>(
-      'X.SearchRecentTweetsByUsername',
+      "X.SearchRecentTweetsByUsername",
       {
         username,
         max_results: 100,
@@ -160,7 +164,9 @@ async function fetchConversations(): Promise<FetchResult> {
     const repliedToIds = new Set<string>();
     for (const tweet of userTweets) {
       // Check if this tweet is a reply to another tweet
-      const replyRef = tweet.referenced_tweets?.find((ref) => ref.type === 'replied_to');
+      const replyRef = tweet.referenced_tweets?.find(
+        (ref) => ref.type === "replied_to"
+      );
       if (replyRef) {
         repliedToIds.add(replyRef.id);
       }
@@ -189,7 +195,7 @@ async function fetchConversations(): Promise<FetchResult> {
 
     for (const mention of mentions) {
       // Skip retweets - they're not conversations needing reply
-      if (mention.text.startsWith('RT @')) {
+      if (mention.text.startsWith("RT @")) {
         skippedRetweets++;
         continue;
       }
@@ -202,8 +208,9 @@ async function fetchConversations(): Promise<FetchResult> {
 
       // Skip if the mention is from the user themselves
       // Prefer authorInfo from includes.users (reliable) over inline fields (unreliable)
-      const authorInfo = userMap.get(mention.author_id || '');
-      const authorUsername = authorInfo?.username || mention.author_username || '';
+      const authorInfo = userMap.get(mention.author_id || "");
+      const authorUsername =
+        authorInfo?.username || mention.author_username || "";
       if (authorUsername.toLowerCase() === username.toLowerCase()) {
         skippedOwnTweets++;
         continue;
@@ -223,7 +230,9 @@ async function fetchConversations(): Promise<FetchResult> {
         timestamp = mention.created_at;
       } else {
         const snowflakeDate = timestampFromSnowflake(mention.id);
-        timestamp = snowflakeDate ? snowflakeDate.toISOString() : new Date().toISOString();
+        timestamp = snowflakeDate
+          ? snowflakeDate.toISOString()
+          : new Date().toISOString();
       }
 
       // Debug avatar resolution
@@ -235,9 +244,12 @@ async function fetchConversations(): Promise<FetchResult> {
 
       conversations.push({
         tweet_id: mention.id,
-        author_username: authorUsername || mention.author_id || 'unknown',
+        author_username: authorUsername || mention.author_id || "unknown",
         author_display_name:
-          authorInfo?.name || mention.author_name || authorUsername || 'Unknown',
+          authorInfo?.name ||
+          mention.author_name ||
+          authorUsername ||
+          "Unknown",
         author_avatar_url: authorInfo?.avatar,
         text: mention.text,
         created_at: timestamp,
@@ -247,7 +259,7 @@ async function fetchConversations(): Promise<FetchResult> {
       });
     }
 
-    debugLog('Filtering stats', {
+    debugLog("Filtering stats", {
       total: mentions.length,
       skippedRetweets,
       skippedRepliedTo,
@@ -258,7 +270,8 @@ async function fetchConversations(): Promise<FetchResult> {
 
     // Sort by most recent first
     conversations.sort(
-      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
 
     // Set avatar URLs to unavatar.io (external service)
@@ -278,7 +291,7 @@ async function fetchConversations(): Promise<FetchResult> {
       },
     };
   } catch (error) {
-    console.error('[ASSA] Error fetching conversations:', error);
+    console.error("[ASSA] Error fetching conversations:", error);
 
     // Check for auth errors using AuthRequiredError
     if (error instanceof AuthRequiredError) {
@@ -287,8 +300,8 @@ async function fetchConversations(): Promise<FetchResult> {
         content: {
           content: [
             {
-              type: 'text',
-              text: `X authorization required. Please use the x_auth_status tool to connect your account.`,
+              type: "text",
+              text: "X authorization required. Please use the x_auth_status tool to connect your account.",
             },
           ],
           isError: true,
@@ -300,16 +313,16 @@ async function fetchConversations(): Promise<FetchResult> {
 
     // Fallback check for auth-related error messages
     if (
-      errorMessage.toLowerCase().includes('not authorized') ||
-      errorMessage.toLowerCase().includes('unauthorized')
+      errorMessage.toLowerCase().includes("not authorized") ||
+      errorMessage.toLowerCase().includes("unauthorized")
     ) {
       return {
         success: false,
         content: {
           content: [
             {
-              type: 'text',
-              text: `X authorization required. Please use the x_auth_status tool to connect your account.`,
+              type: "text",
+              text: "X authorization required. Please use the x_auth_status tool to connect your account.",
             },
           ],
           isError: true,
@@ -322,7 +335,7 @@ async function fetchConversations(): Promise<FetchResult> {
       content: {
         content: [
           {
-            type: 'text',
+            type: "text",
             text: `Error fetching conversations: ${errorMessage}`,
           },
         ],
@@ -347,10 +360,11 @@ export async function xConversations(): Promise<unknown> {
   return {
     content: [
       {
-        type: 'text',
-        text: count === 0
-          ? 'No conversations awaiting your reply.'
-          : `${count} conversation${count === 1 ? '' : 's'} awaiting your reply.`,
+        type: "text",
+        text:
+          count === 0
+            ? "No conversations awaiting your reply."
+            : `${count} conversation${count === 1 ? "" : "s"} awaiting your reply.`,
       },
     ],
   };
@@ -370,7 +384,7 @@ export async function xGetConversations(): Promise<unknown> {
   return {
     content: [
       {
-        type: 'text',
+        type: "text",
         text: JSON.stringify(result.data),
       },
     ],

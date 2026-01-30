@@ -5,17 +5,17 @@
  * Supports dismiss and reply actions via direct tool calls.
  */
 
-import { App } from '@modelcontextprotocol/ext-apps';
+import { App } from "@modelcontextprotocol/ext-apps";
 import {
+  authStyles,
   isAuthRequired,
+  openExternalLink,
   parseToolResult,
   renderAuthRequired,
-  authStyles,
-  openExternalLink,
-} from './lib/auth-handler.js';
+} from "./lib/auth-handler.js";
 
 // Inject auth styles
-const styleEl = document.createElement('style');
+const styleEl = document.createElement("style");
 styleEl.textContent = authStyles;
 document.head.appendChild(styleEl);
 
@@ -37,20 +37,24 @@ interface ConversationsData {
 }
 
 // Enable autoResize to let the SDK handle iframe height automatically
-const app = new App({ name: 'ASSA Conversations', version: '1.0.0' }, {}, { autoResize: true });
+const app = new App(
+  { name: "ASSA Conversations", version: "1.0.0" },
+  {},
+  { autoResize: true }
+);
 
 // DOM elements
-const loadingEl = document.getElementById('loading')!;
-const contentEl = document.getElementById('content')!;
-const conversationsListEl = document.getElementById('conversationsList')!;
-const loadMoreBtn = document.getElementById('loadMoreBtn') as HTMLButtonElement;
+const loadingEl = document.getElementById("loading")!;
+const contentEl = document.getElementById("content")!;
+const conversationsListEl = document.getElementById("conversationsList")!;
+const loadMoreBtn = document.getElementById("loadMoreBtn") as HTMLButtonElement;
 
-let currentData: ConversationsData | null = null;
+let _currentData: ConversationsData | null = null;
 
 // Height is now managed automatically by the MCP Apps SDK (autoResize: true)
 
 function escapeHtml(text: string): string {
-  const div = document.createElement('div');
+  const div = document.createElement("div");
   div.textContent = text;
   return div.innerHTML;
 }
@@ -59,33 +63,41 @@ function formatRelativeTime(dateStr: string): string {
   const date = new Date(dateStr);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
+  const diffMins = Math.floor(diffMs / 60_000);
+  const diffHours = Math.floor(diffMs / 3_600_000);
+  const diffDays = Math.floor(diffMs / 86_400_000);
 
-  if (diffMins < 1) return 'just now';
-  if (diffMins < 60) return `${diffMins}m`;
-  if (diffHours < 24) return `${diffHours}h`;
-  if (diffDays < 7) return `${diffDays}d`;
+  if (diffMins < 1) {
+    return "just now";
+  }
+  if (diffMins < 60) {
+    return `${diffMins}m`;
+  }
+  if (diffHours < 24) {
+    return `${diffHours}h`;
+  }
+  if (diffDays < 7) {
+    return `${diffDays}d`;
+  }
   return date.toLocaleDateString();
 }
 
 function updateLoadMoreButton(count: number): void {
   if (count === 0) {
     // Show button only when empty - lets user check for new mentions
-    loadMoreBtn.textContent = 'Check for new mentions';
-    loadMoreBtn.classList.add('all-clear');
-    loadMoreBtn.classList.remove('hidden');
+    loadMoreBtn.textContent = "Check for new mentions";
+    loadMoreBtn.classList.add("all-clear");
+    loadMoreBtn.classList.remove("hidden");
   } else {
     // Hide button when conversations are present
-    loadMoreBtn.classList.add('hidden');
+    loadMoreBtn.classList.add("hidden");
   }
 }
 
 function renderConversations(data: ConversationsData): void {
-  currentData = data;
-  loadingEl.classList.add('hidden');
-  contentEl.classList.remove('hidden');
+  _currentData = data;
+  loadingEl.classList.add("hidden");
+  contentEl.classList.remove("hidden");
 
   const count = data.conversations.length;
   updateLoadMoreButton(count);
@@ -104,9 +116,9 @@ function renderConversations(data: ConversationsData): void {
   // Helper to get initials from display name
   function getInitials(name: string): string {
     return name
-      .split(' ')
+      .split(" ")
       .map((part) => part[0])
-      .join('')
+      .join("")
       .toUpperCase()
       .slice(0, 2);
   }
@@ -114,7 +126,9 @@ function renderConversations(data: ConversationsData): void {
   conversationsListEl.innerHTML = data.conversations
     .map((conv) => {
       const relativeTime = formatRelativeTime(conv.created_at);
-      const initials = getInitials(conv.author_display_name || conv.author_username || '?');
+      const initials = getInitials(
+        conv.author_display_name || conv.author_username || "?"
+      );
 
       // Use avatar URL if available - use data-src for deferred loading (CSP race condition workaround)
       const hasAvatarUrl = !!conv.author_avatar_url;
@@ -153,43 +167,45 @@ function renderConversations(data: ConversationsData): void {
         </div>
       `;
     })
-    .join('');
+    .join("");
 
   // Attach event listeners to action buttons
   attachEventListeners();
 
   // Defer image loading to allow CSP to be applied (race condition workaround)
   setTimeout(() => {
-    document.querySelectorAll('img[data-src]').forEach((img) => {
-      const src = img.getAttribute('data-src');
+    for (const img of document.querySelectorAll("img[data-src]")) {
+      const src = img.getAttribute("data-src");
       if (src) {
         (img as HTMLImageElement).src = src;
         // Hide placeholder when image loads
-        img.addEventListener('load', () => {
+        img.addEventListener("load", () => {
           const placeholder = img.nextElementSibling as HTMLElement;
-          if (placeholder?.classList.contains('avatar-placeholder')) {
-            placeholder.style.display = 'none';
+          if (placeholder?.classList.contains("avatar-placeholder")) {
+            placeholder.style.display = "none";
           }
         });
       }
-    });
+    }
   }, 100);
 }
 
 function attachEventListeners(): void {
   // Dismiss buttons
-  document.querySelectorAll('[data-action="dismiss"]').forEach((btn) => {
-    btn.addEventListener('click', async (e) => {
-      const card = (e.target as HTMLElement).closest('.conversation-card') as HTMLElement;
+  for (const btn of document.querySelectorAll('[data-action="dismiss"]')) {
+    btn.addEventListener("click", async (e) => {
+      const card = (e.target as HTMLElement).closest(
+        ".conversation-card"
+      ) as HTMLElement;
       const tweetId = card.dataset.tweetId;
-      const replyCount = parseInt(card.dataset.replyCount || '0', 10);
+      const replyCount = Number.parseInt(card.dataset.replyCount || "0", 10);
 
       (btn as HTMLButtonElement).disabled = true;
-      btn.textContent = 'Dismissing...';
+      btn.textContent = "Dismissing...";
 
       try {
         await app.callServerTool({
-          name: 'x_dismiss_conversation',
+          name: "x_dismiss_conversation",
           arguments: {
             tweet_id: tweetId,
             reply_count: replyCount,
@@ -197,63 +213,69 @@ function attachEventListeners(): void {
         });
 
         // Remove card from UI
-        card.style.opacity = '0.5';
+        card.style.opacity = "0.5";
         setTimeout(() => card.remove(), 300);
 
         // Update button count
-        const remaining = document.querySelectorAll('.conversation-card').length - 1;
+        const remaining =
+          document.querySelectorAll(".conversation-card").length - 1;
         updateLoadMoreButton(remaining);
       } catch (error) {
-        btn.textContent = 'Dismiss';
+        btn.textContent = "Dismiss";
         (btn as HTMLButtonElement).disabled = false;
-        console.error('Failed to dismiss:', error);
+        console.error("Failed to dismiss:", error);
       }
     });
-  });
+  }
 
   // Reply buttons - post directly and show inline confirmation
-  document.querySelectorAll('[data-action="reply"]').forEach((btn) => {
-    btn.addEventListener('click', async (e) => {
-      console.log('[ASSA] Reply button clicked');
-      const card = (e.target as HTMLElement).closest('.conversation-card') as HTMLElement;
+  for (const btn of document.querySelectorAll('[data-action="reply"]')) {
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Complex reply flow with auth, error handling, and auto-dismiss
+    btn.addEventListener("click", async (e) => {
+      console.log("[ASSA] Reply button clicked");
+      const card = (e.target as HTMLElement).closest(
+        ".conversation-card"
+      ) as HTMLElement;
       const tweetId = card.dataset.tweetId;
-      const replyCount = parseInt(card.dataset.replyCount || '0', 10);
-      const textarea = card.querySelector('.reply-input') as HTMLTextAreaElement;
+      const replyCount = Number.parseInt(card.dataset.replyCount || "0", 10);
+      const textarea = card.querySelector(
+        ".reply-input"
+      ) as HTMLTextAreaElement;
       const replyText = textarea?.value.trim();
 
-      console.log('[ASSA] Reply data:', { tweetId, replyCount, replyText });
+      console.log("[ASSA] Reply data:", { tweetId, replyCount, replyText });
 
       if (!replyText) {
-        console.log('[ASSA] No reply text, focusing textarea');
+        console.log("[ASSA] No reply text, focusing textarea");
         textarea.focus();
-        textarea.style.borderColor = '#ef4444';
+        textarea.style.borderColor = "#ef4444";
         setTimeout(() => {
-          textarea.style.borderColor = '';
+          textarea.style.borderColor = "";
         }, 2000);
         return;
       }
 
       (btn as HTMLButtonElement).disabled = true;
-      btn.textContent = 'Posting...';
+      btn.textContent = "Posting...";
 
       try {
-        console.log('[ASSA] Calling x_post_tweet...');
+        console.log("[ASSA] Calling x_post_tweet...");
         // Post the reply directly
         const result = await app.callServerTool({
-          name: 'x_post_tweet',
+          name: "x_post_tweet",
           arguments: {
             text: replyText,
             reply_to_id: tweetId,
           },
         });
 
-        console.log('[ASSA] Result:', result);
+        console.log("[ASSA] Result:", result);
 
         // Parse the result using the auth handler utility
         const parsed = parseToolResult(result);
         if (!parsed) {
-          console.error('[ASSA] Failed to parse tool result');
-          btn.textContent = 'Error - try again';
+          console.error("[ASSA] Failed to parse tool result");
+          btn.textContent = "Error - try again";
           (btn as HTMLButtonElement).disabled = false;
           return;
         }
@@ -262,17 +284,20 @@ function attachEventListeners(): void {
 
         // Check if auth is required
         if (isAuthRequired(data)) {
-          console.log('[ASSA] Auth required, showing auth UI');
-          btn.textContent = 'Auth required';
-          const replyBox = card.querySelector('.reply-box') as HTMLElement;
+          console.log("[ASSA] Auth required, showing auth UI");
+          btn.textContent = "Auth required";
+          const replyBox = card.querySelector(".reply-box") as HTMLElement;
           renderAuthRequired(replyBox, data, app);
           return;
         }
 
         // Check for other errors
-        if (parsed.isError || (data && typeof data === 'object' && 'error' in data)) {
-          console.error('[ASSA] Tool error:', data);
-          btn.textContent = 'Error - try again';
+        if (
+          parsed.isError ||
+          (data && typeof data === "object" && "error" in data)
+        ) {
+          console.error("[ASSA] Tool error:", data);
+          btn.textContent = "Error - try again";
           (btn as HTMLButtonElement).disabled = false;
           return;
         }
@@ -280,58 +305,61 @@ function attachEventListeners(): void {
         // Handle successful post
         const successData = data as { success?: boolean; url?: string };
         if (successData.success) {
-            // Show inline reply confirmation
-            const replyBox = card.querySelector('.reply-box') as HTMLElement;
-            const tweetUrl = successData.url || '';
-            const hasValidUrl = tweetUrl && !tweetUrl.includes('/unknown');
+          // Show inline reply confirmation
+          const replyBox = card.querySelector(".reply-box") as HTMLElement;
+          const tweetUrl = successData.url || "";
+          const hasValidUrl = tweetUrl && !tweetUrl.includes("/unknown");
 
-            replyBox.innerHTML = `
+          replyBox.innerHTML = `
               <div class="reply-sent">
                 <div class="reply-sent-header">✓ Reply posted</div>
                 <p class="reply-sent-text">${escapeHtml(replyText)}</p>
-                ${hasValidUrl ? `<button class="reply-sent-link" data-url="${escapeHtml(tweetUrl)}">View on X →</button>` : ''}
+                ${hasValidUrl ? `<button class="reply-sent-link" data-url="${escapeHtml(tweetUrl)}">View on X →</button>` : ""}
               </div>
             `;
 
-            // Handle the "View on X" button click via openExternalLink helper
-            const viewBtn = replyBox.querySelector('.reply-sent-link') as HTMLButtonElement;
-            if (viewBtn) {
-              viewBtn.addEventListener('click', async () => {
-                const url = viewBtn.dataset.url;
-                if (url) {
-                  await openExternalLink(app, url);
-                }
-              });
-            }
-
-            // Auto-dismiss after a delay
-            setTimeout(async () => {
-              try {
-                await app.callServerTool({
-                  name: 'x_dismiss_conversation',
-                  arguments: {
-                    tweet_id: tweetId,
-                    reply_count: replyCount + 1, // Increment so it stays dismissed
-                  },
-                });
-                card.style.opacity = '0.5';
-                setTimeout(() => card.remove(), 500);
-
-                // Update button count
-                const remaining = document.querySelectorAll('.conversation-card').length - 1;
-                updateLoadMoreButton(remaining);
-              } catch {
-                // Ignore dismiss errors
+          // Handle the "View on X" button click via openExternalLink helper
+          const viewBtn = replyBox.querySelector(
+            ".reply-sent-link"
+          ) as HTMLButtonElement;
+          if (viewBtn) {
+            viewBtn.addEventListener("click", async () => {
+              const url = viewBtn.dataset.url;
+              if (url) {
+                await openExternalLink(app, url);
               }
-            }, 3000);
+            });
+          }
+
+          // Auto-dismiss after a delay
+          setTimeout(async () => {
+            try {
+              await app.callServerTool({
+                name: "x_dismiss_conversation",
+                arguments: {
+                  tweet_id: tweetId,
+                  reply_count: replyCount + 1, // Increment so it stays dismissed
+                },
+              });
+              card.style.opacity = "0.5";
+              setTimeout(() => card.remove(), 500);
+
+              // Update button count
+              const remaining =
+                document.querySelectorAll(".conversation-card").length - 1;
+              updateLoadMoreButton(remaining);
+            } catch {
+              // Ignore dismiss errors
+            }
+          }, 3000);
         }
       } catch (error) {
-        console.error('[ASSA] Failed to post reply:', error);
-        btn.textContent = 'Error - try again';
+        console.error("[ASSA] Failed to post reply:", error);
+        btn.textContent = "Error - try again";
         (btn as HTMLButtonElement).disabled = false;
       }
     });
-  });
+  }
 }
 
 // Handle tool result from server (may be brief message, data comes from x_get_conversations)
@@ -339,39 +367,43 @@ app.ontoolresult = async () => {
   // Fetch actual data using the app-only tool
   try {
     const result = await app.callServerTool({
-      name: 'x_get_conversations',
+      name: "x_get_conversations",
       arguments: {},
     });
-    const textContent = result.content?.find((c: { type: string }) => c.type === 'text');
-    if (textContent && 'text' in textContent) {
+    const textContent = result.content?.find(
+      (c: { type: string }) => c.type === "text"
+    );
+    if (textContent && "text" in textContent) {
       const data = JSON.parse(textContent.text as string) as ConversationsData;
       renderConversations(data);
     }
   } catch (error) {
-    console.error('[ASSA] Failed to fetch conversations:', error);
-    loadingEl.textContent = 'Error loading conversations';
+    console.error("[ASSA] Failed to fetch conversations:", error);
+    loadingEl.textContent = "Error loading conversations";
   }
 };
 
 // Check for new mentions button (only visible when list is empty)
-loadMoreBtn.addEventListener('click', async () => {
+loadMoreBtn.addEventListener("click", async () => {
   loadMoreBtn.disabled = true;
-  loadMoreBtn.textContent = 'Checking...';
+  loadMoreBtn.textContent = "Checking...";
 
   try {
     const result = await app.callServerTool({
-      name: 'x_get_conversations',
+      name: "x_get_conversations",
       arguments: {},
     });
 
-    const textContent = result.content?.find((c: { type: string }) => c.type === 'text');
-    if (textContent && 'text' in textContent) {
+    const textContent = result.content?.find(
+      (c: { type: string }) => c.type === "text"
+    );
+    if (textContent && "text" in textContent) {
       const data = JSON.parse(textContent.text as string) as ConversationsData;
       renderConversations(data);
     }
   } catch (error) {
-    console.error('[ASSA] Failed to check for mentions:', error);
-    loadMoreBtn.textContent = 'Check for new mentions';
+    console.error("[ASSA] Failed to check for mentions:", error);
+    loadMoreBtn.textContent = "Check for new mentions";
   } finally {
     loadMoreBtn.disabled = false;
   }

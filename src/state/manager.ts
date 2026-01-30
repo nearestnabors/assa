@@ -241,7 +241,13 @@ export function getLastChecked(): string | null {
  * Clear all state (for testing)
  */
 export function clearState(): void {
-  cachedState = { ...DEFAULT_STATE };
+  // Deep copy to avoid shared references with DEFAULT_STATE
+  cachedState = {
+    x_username: null,
+    dismissed: {},
+    vips: [],
+    last_checked: null,
+  };
   saveState();
 }
 

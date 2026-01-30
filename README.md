@@ -104,13 +104,22 @@ Reply to @anthropic_devs saying I'll share slides after the talk
 
 ```bash
 # Run in development mode (auto-reload)
-pnpm dev
+bun dev
 
 # Type check
-pnpm typecheck
+bun typecheck
+
+# Lint check
+bun check
+
+# Run tests
+bun test
+
+# Run tests in watch mode
+bun test:watch
 
 # Build for production
-pnpm build
+bun run build
 ```
 
 ## Getting an Arcade API Key
