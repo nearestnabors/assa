@@ -124,10 +124,19 @@ const TOOLS: Tool[] = [
   },
   {
     name: 'x_get_conversations',
-    description: 'Internal tool to fetch conversation data for the UI.',
+    description: 'Internal tool to fetch conversation data for the UI with pagination.',
     inputSchema: {
       type: 'object',
-      properties: {},
+      properties: {
+        limit: {
+          type: 'number',
+          description: 'Maximum number of conversations to return (default: 10)',
+        },
+        offset: {
+          type: 'number',
+          description: 'Number of conversations to skip (for pagination)',
+        },
+      },
       required: [],
     },
     // Hidden from model - only callable by UI apps

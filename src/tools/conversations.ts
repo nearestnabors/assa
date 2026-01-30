@@ -83,11 +83,19 @@ interface ConversationItem {
  * Fetches unreplied mentions and returns data for the conversation list UI
  */
 type FetchResult =
-  | { success: true; data: { conversations: ConversationItem[]; username: string } }
+  | { success: true; data: { conversations: ConversationItem[]; username: string; totalCount: number; hasMore: boolean } }
   | { success: false; content: unknown };
 
+interface FetchOptions {
+  limit?: number;
+  offset?: number;
+}
+
+const DEFAULT_LIMIT = 10;
+
 // Internal function that fetches and returns conversation data
-async function fetchConversations(): Promise<FetchResult> {
+async function fetchConversations(options: FetchOptions = {}): Promise<FetchResult> {
+  const { limit = DEFAULT_LIMIT, offset = 0 } = options;
   // Clean up expired dismissals
   const prunedDismissals = pruneExpiredDismissals();
   if (prunedDismissals > 0) {
@@ -140,6 +148,8 @@ async function fetchConversations(): Promise<FetchResult> {
         data: {
           conversations: [],
           username,
+          totalCount: 0,
+          hasMore: false,
         },
       };
     }
@@ -156,6 +166,18 @@ async function fetchConversations(): Promise<FetchResult> {
     const userTweets = userTweetsResponse.data || [];
     console.error(`[ASSA] Found ${userTweets.length} user tweets`);
 
+    // Debug: log user tweets response structure
+    debugLog('User tweets response structure', {
+      hasData: !!userTweetsResponse.data,
+      tweetCount: userTweets.length,
+      sampleTweet: userTweets[0] ? {
+        id: userTweets[0].id,
+        text: userTweets[0].text?.slice(0, 50),
+        referenced_tweets: userTweets[0].referenced_tweets,
+        in_reply_to_user_id: userTweets[0].in_reply_to_user_id,
+      } : null,
+    });
+
     // 3. Build a set of tweet IDs that the user has replied to
     const repliedToIds = new Set<string>();
     for (const tweet of userTweets) {
@@ -163,9 +185,11 @@ async function fetchConversations(): Promise<FetchResult> {
       const replyRef = tweet.referenced_tweets?.find((ref) => ref.type === 'replied_to');
       if (replyRef) {
         repliedToIds.add(replyRef.id);
+        debugLog(`Found reply: ${tweet.id} replied to ${replyRef.id}`);
       }
     }
     console.error(`[ASSA] User has replied to ${repliedToIds.size} tweets`);
+    debugLog('Replied to IDs', Array.from(repliedToIds));
 
     // 4. Build user lookup map for display names
     const userMap = new Map<
@@ -270,11 +294,20 @@ async function fetchConversations(): Promise<FetchResult> {
     // Update last checked timestamp
     updateLastChecked();
 
+    // Apply pagination
+    const totalCount = conversations.length;
+    const paginatedConversations = conversations.slice(offset, offset + limit);
+    const hasMore = offset + limit < totalCount;
+
+    debugLog('Pagination', { totalCount, offset, limit, returning: paginatedConversations.length, hasMore });
+
     return {
       success: true,
       data: {
-        conversations,
+        conversations: paginatedConversations,
         username,
+        totalCount,
+        hasMore,
       },
     };
   } catch (error) {
@@ -358,10 +391,13 @@ export async function xConversations(): Promise<unknown> {
 
 /**
  * Tool: x_get_conversations (for UI only, hidden from model)
- * Returns full conversation data as JSON
+ * Returns full conversation data as JSON with pagination support
  */
-export async function xGetConversations(): Promise<unknown> {
-  const result = await fetchConversations();
+export async function xGetConversations(params?: { limit?: number; offset?: number }): Promise<unknown> {
+  const result = await fetchConversations({
+    limit: params?.limit,
+    offset: params?.offset,
+  });
 
   if (!result.success) {
     // Return JSON error so UI can parse it
@@ -374,6 +410,8 @@ export async function xGetConversations(): Promise<unknown> {
             message: 'Please authenticate with x_auth_status first',
             conversations: [],
             username: '',
+            totalCount: 0,
+            hasMore: false,
           }),
         },
       ],

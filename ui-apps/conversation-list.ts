@@ -34,6 +34,8 @@ interface ConversationItem {
 interface ConversationsData {
   conversations: ConversationItem[];
   username: string;
+  totalCount: number;
+  hasMore: boolean;
 }
 
 // Enable autoResize to let the SDK handle iframe height automatically
@@ -46,6 +48,8 @@ const conversationsListEl = document.getElementById('conversationsList')!;
 const loadMoreBtn = document.getElementById('loadMoreBtn') as HTMLButtonElement;
 
 let currentData: ConversationsData | null = null;
+let currentOffset = 0;
+const PAGE_SIZE = 10;
 
 // Height is now managed automatically by the MCP Apps SDK (autoResize: true)
 
@@ -70,27 +74,37 @@ function formatRelativeTime(dateStr: string): string {
   return date.toLocaleDateString();
 }
 
-function updateLoadMoreButton(count: number): void {
-  if (count === 0) {
+function updateLoadMoreButton(data: ConversationsData): void {
+  const displayedCount = document.querySelectorAll('.conversation-card').length;
+
+  if (displayedCount === 0) {
     // Show button only when empty - lets user check for new mentions
     loadMoreBtn.textContent = 'Check for new mentions';
     loadMoreBtn.classList.add('all-clear');
     loadMoreBtn.classList.remove('hidden');
+  } else if (data.hasMore) {
+    // Show load more button when there are more items
+    const remaining = data.totalCount - displayedCount;
+    loadMoreBtn.textContent = `Load more (${remaining} remaining)`;
+    loadMoreBtn.classList.remove('all-clear', 'hidden');
   } else {
-    // Hide button when conversations are present
+    // Hide button when all loaded
     loadMoreBtn.classList.add('hidden');
   }
 }
 
-function renderConversations(data: ConversationsData): void {
+function renderConversations(data: ConversationsData, append = false): void {
   currentData = data;
   loadingEl.classList.add('hidden');
   contentEl.classList.remove('hidden');
 
-  const count = data.conversations.length;
-  updateLoadMoreButton(count);
+  // Reset offset if not appending
+  if (!append) {
+    currentOffset = data.conversations.length;
+  }
 
-  if (count === 0) {
+  // Check for empty state using totalCount (0 total means nothing to show)
+  if (data.totalCount === 0) {
     conversationsListEl.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">✨</div>
@@ -98,6 +112,7 @@ function renderConversations(data: ConversationsData): void {
         <p>No conversations need your attention right now.</p>
       </div>
     `;
+    updateLoadMoreButton(data);
     return;
   }
 
@@ -111,7 +126,7 @@ function renderConversations(data: ConversationsData): void {
       .slice(0, 2);
   }
 
-  conversationsListEl.innerHTML = data.conversations
+  const cardsHtml = data.conversations
     .map((conv) => {
       const relativeTime = formatRelativeTime(conv.created_at);
       const initials = getInitials(conv.author_display_name || conv.author_username || '?');
@@ -155,6 +170,15 @@ function renderConversations(data: ConversationsData): void {
     })
     .join('');
 
+  if (append) {
+    // Append new cards to existing list
+    conversationsListEl.insertAdjacentHTML('beforeend', cardsHtml);
+    currentOffset += data.conversations.length;
+  } else {
+    // Replace entire list
+    conversationsListEl.innerHTML = cardsHtml;
+  }
+
   // Attach event listeners to action buttons
   attachEventListeners();
 
@@ -174,6 +198,9 @@ function renderConversations(data: ConversationsData): void {
       }
     });
   }, 100);
+
+  // Update load more button state
+  updateLoadMoreButton(data);
 }
 
 function attachEventListeners(): void {
@@ -200,9 +227,14 @@ function attachEventListeners(): void {
         card.style.opacity = '0.5';
         setTimeout(() => card.remove(), 300);
 
-        // Update button count
+        // Update button state based on remaining items
         const remaining = document.querySelectorAll('.conversation-card').length - 1;
-        updateLoadMoreButton(remaining);
+        if (currentData) {
+          // Update the data to reflect the removal
+          currentData.totalCount = Math.max(0, currentData.totalCount - 1);
+          currentData.hasMore = currentOffset < currentData.totalCount;
+          updateLoadMoreButton(currentData);
+        }
       } catch (error) {
         btn.textContent = 'Dismiss';
         (btn as HTMLButtonElement).disabled = false;
@@ -324,9 +356,12 @@ function attachEventListeners(): void {
                 card.style.opacity = '0.5';
                 setTimeout(() => card.remove(), 500);
 
-                // Update button count
-                const remaining = document.querySelectorAll('.conversation-card').length - 1;
-                updateLoadMoreButton(remaining);
+                // Update button state based on remaining items
+                if (currentData) {
+                  currentData.totalCount = Math.max(0, currentData.totalCount - 1);
+                  currentData.hasMore = currentOffset < currentData.totalCount;
+                  updateLoadMoreButton(currentData);
+                }
               } catch {
                 // Ignore dismiss errors
               }
@@ -367,25 +402,32 @@ app.ontoolresult = async () => {
   }
 };
 
-// Check for new mentions button (only visible when list is empty)
+// Load more button - either refreshes when empty or loads next page
 loadMoreBtn.addEventListener('click', async () => {
+  const isLoadingMore = currentOffset > 0 && currentData?.hasMore;
   loadMoreBtn.disabled = true;
-  loadMoreBtn.textContent = 'Checking...';
+  loadMoreBtn.textContent = isLoadingMore ? 'Loading...' : 'Checking...';
 
   try {
     const result = await app.callServerTool({
       name: 'x_get_conversations',
-      arguments: {},
+      arguments: isLoadingMore ? { limit: PAGE_SIZE, offset: currentOffset } : {},
     });
 
     const textContent = result.content?.find((c: { type: string }) => c.type === 'text');
     if (textContent && 'text' in textContent) {
       const data = JSON.parse(textContent.text as string) as ConversationsData;
-      renderConversations(data);
+      if (isLoadingMore) {
+        // Append new conversations
+        renderConversations(data, true);
+      } else {
+        // Fresh load
+        renderConversations(data, false);
+      }
     }
   } catch (error) {
-    console.error('[ASSA] Failed to check for mentions:', error);
-    loadMoreBtn.textContent = 'Check for new mentions';
+    console.error('[ASSA] Failed to load conversations:', error);
+    loadMoreBtn.textContent = currentOffset > 0 ? 'Error - try again' : 'Check for new mentions';
   } finally {
     loadMoreBtn.disabled = false;
   }
