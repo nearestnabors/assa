@@ -49,7 +49,7 @@ let authData: AuthData | null = null;
 const authPoller = createAuthPoller(app, {
   onAuthComplete: async () => {
     const convResult = await app.callServerTool({
-      name: 'x_conversations',
+      name: 'x_get_conversations',
       arguments: {},
     });
 
@@ -310,7 +310,7 @@ refreshBtn.addEventListener('click', async () => {
 
   try {
     const result = await app.callServerTool({
-      name: 'x_conversations',
+      name: 'x_get_conversations',
       arguments: {},
     });
 

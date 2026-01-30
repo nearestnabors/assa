@@ -334,16 +334,22 @@ function attachEventListeners(): void {
   });
 }
 
-// Handle tool result from server
-app.ontoolresult = (result) => {
-  const textContent = result.content?.find((c: { type: string }) => c.type === 'text');
-  if (textContent && 'text' in textContent) {
-    try {
+// Handle tool result from server (may be brief message, data comes from x_get_conversations)
+app.ontoolresult = async () => {
+  // Fetch actual data using the app-only tool
+  try {
+    const result = await app.callServerTool({
+      name: 'x_get_conversations',
+      arguments: {},
+    });
+    const textContent = result.content?.find((c: { type: string }) => c.type === 'text');
+    if (textContent && 'text' in textContent) {
       const data = JSON.parse(textContent.text as string) as ConversationsData;
       renderConversations(data);
-    } catch {
-      loadingEl.textContent = 'Error loading conversations';
     }
+  } catch (error) {
+    console.error('[ASSA] Failed to fetch conversations:', error);
+    loadingEl.textContent = 'Error loading conversations';
   }
 };
 
@@ -354,7 +360,7 @@ loadMoreBtn.addEventListener('click', async () => {
 
   try {
     const result = await app.callServerTool({
-      name: 'x_conversations',
+      name: 'x_get_conversations',
       arguments: {},
     });
 

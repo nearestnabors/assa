@@ -123,6 +123,21 @@ const TOOLS: Tool[] = [
     },
   },
   {
+    name: 'x_get_conversations',
+    description: 'Internal tool to fetch conversation data for the UI.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+      required: [],
+    },
+    // Hidden from model - only callable by UI apps
+    _meta: {
+      ui: {
+        visibility: ['app'],
+      },
+    },
+  },
+  {
     name: 'x_dismiss_conversation',
     description: 'Dismiss a conversation from the list. It will reappear if there is new activity (new replies).',
     inputSchema: {
@@ -150,6 +165,7 @@ const toolHandlers: Record<string, ToolHandler> = {
   x_draft_tweet: xDraftTweet,
   x_post_tweet: xPostTweet,
   x_conversations: xConversations,
+  x_get_conversations: xConversations, // Same handler, UI calls this to get data
   x_dismiss_conversation: xDismissConversation,
 };
 
