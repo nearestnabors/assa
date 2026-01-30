@@ -290,6 +290,7 @@ export function clearState(): void {
   cachedState = {
     x_username: null,
     dismissed: {},
+    replied_to: [],
     vips: [],
     last_checked: null,
   };
