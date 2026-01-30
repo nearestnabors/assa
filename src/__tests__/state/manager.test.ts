@@ -10,14 +10,11 @@ mock.module("node:os", () => ({
 
 // Import after mocking
 import {
-  addVip,
   clearState,
   dismissTweet,
   getLastChecked,
   getUsername,
-  getVips,
   isDismissed,
-  removeVip,
   setUsername,
   undismissTweet,
   updateLastChecked,
@@ -93,38 +90,6 @@ describe("dismiss management", () => {
   });
 });
 
-describe("VIP management", () => {
-  test("addVip adds a VIP account", () => {
-    const vip = uniqueId("vip");
-    clearState(); // Ensure clean state
-    addVip(vip);
-    expect(getVips()).toContain(vip);
-  });
-
-  test("addVip normalizes username (strips @ and lowercases)", () => {
-    const vip = uniqueId("VIP"); // Mixed case
-    clearState();
-    addVip(`@${vip}`);
-    expect(getVips()).toContain(vip.toLowerCase());
-  });
-
-  test("addVip doesn't add duplicates", () => {
-    const vip = uniqueId("vip");
-    clearState();
-    addVip(vip);
-    addVip(vip);
-    expect(getVips().filter((v) => v === vip)).toHaveLength(1);
-  });
-
-  test("removeVip removes a VIP account", () => {
-    const vip = uniqueId("vip");
-    clearState();
-    addVip(vip);
-    removeVip(vip);
-    expect(getVips()).not.toContain(vip);
-  });
-});
-
 describe("last checked timestamp", () => {
   test("getLastChecked returns null after clearState", () => {
     clearState();
@@ -146,14 +111,6 @@ describe("clearState", () => {
     setUsername("testuser");
     clearState();
     expect(getUsername()).toBeNull();
-  });
-
-  test("clearState resets VIPs", () => {
-    clearState();
-    const vip = uniqueId("vip");
-    addVip(vip);
-    clearState();
-    expect(getVips()).toEqual([]);
   });
 
   test("clearState resets dismissed tweets", () => {
