@@ -94,11 +94,11 @@ Reply to @anthropic_devs saying I'll share slides after the talk
 
 | Tool | Description |
 |------|-------------|
-| `twitter_auth_status` | Check authentication, show connect button if needed |
-| `twitter_conversations` | Show unreplied mentions as a conversation inbox |
-| `twitter_dismiss_conversation` | Dismiss a conversation (reappears on new activity) |
-| `twitter_draft_tweet` | Create draft with preview |
-| `twitter_post_tweet` | Post after approval |
+| `x_auth_status` | Check authentication, show connect button if needed |
+| `x_conversations` | Show unreplied mentions as a conversation inbox |
+| `x_dismiss_conversation` | Dismiss a conversation (reappears on new activity) |
+| `x_draft_tweet` | Create draft with preview |
+| `x_post_tweet` | Post after approval |
 
 ## Development
 
@@ -138,6 +138,32 @@ ASSA MCP Server
        ▼
    Twitter
 ```
+
+## Roadmap
+
+### Next Steps
+
+- [ ] Migrate to React components
+- [ ] Make Authorize button more attractive
+- [ ] Get a proper style system implemented like ShadCN
+- [ ] Make the "reply UI" smaller:
+  - [ ] Add small "dismiss" and "reply" icons in the lower left corner of each card
+  - [ ] Clicking "reply" replaces icons with input area and reply button
+  - [ ] Clicking outside closes the UI and brings back the icons
+- [ ] If a Tweet is a reply, show the original tweet as a stylized quote above the comment
+- [ ] If a tweet quotes another tweet, show the quoted tweet below the comment
+
+### Phase 2
+
+- [ ] Add `X.GetMutedUsers` to Arcade to filter muted accounts from conversations
+- [ ] Add media expansion to Arcade to show images in tweets
+- [ ] Browser automation for "Following" timeline digest (AgentQL/Firecrawl)
+- [ ] VIP accounts feature (track specific users)
+
+### Known Limitations
+
+- **No DM support** — Arcade's X integration doesn't include DM access
+- **7-day limit** — X search only goes back 7 days
 
 ## Credits
 
