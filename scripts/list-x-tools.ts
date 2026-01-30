@@ -3,27 +3,27 @@
  * Run with: npx tsx scripts/list-x-tools.ts
  */
 
-import 'dotenv/config';
-import Arcade from '@arcadeai/arcadejs';
+import "dotenv/config";
+import Arcade from "@arcadeai/arcadejs";
 
 async function main() {
   const apiKey = process.env.ARCADE_API_KEY;
 
   if (!apiKey) {
-    console.error('Error: ARCADE_API_KEY environment variable not set');
+    console.error("Error: ARCADE_API_KEY environment variable not set");
     process.exit(1);
   }
 
   const arcade = new Arcade({ apiKey });
 
-  console.log('Fetching X tools from Arcade API...\n');
+  console.log("Fetching X tools from Arcade API...\n");
 
   try {
     // List all tools, filtering by X toolkit
-    const tools = await arcade.tools.list({ toolkit: 'x' });
+    const tools = await arcade.tools.list({ toolkit: "x" });
 
-    console.log('Available X Tools:');
-    console.log('==================\n');
+    console.log("Available X Tools:");
+    console.log("==================\n");
 
     for await (const tool of tools) {
       console.log(`  ${tool.name}`);
@@ -33,7 +33,7 @@ async function main() {
       console.log();
     }
   } catch (error) {
-    console.error('Error fetching tools:', error);
+    console.error("Error fetching tools:", error);
   }
 }
 

@@ -6,7 +6,7 @@
  * If not authenticated, returns auth data for the MCP Apps UI component.
  */
 
-import { arcadeClient } from '../arcade/client.js';
+import { arcadeClient } from "../arcade/client.js";
 
 export async function twitterAuthStatus(
   _args: Record<string, unknown>
@@ -15,12 +15,12 @@ export async function twitterAuthStatus(
   const authState = await arcadeClient.getAuthStatus();
 
   if (authState.authorized) {
-    const usernameText = authState.username ? ` as @${authState.username}` : '';
+    const usernameText = authState.username ? ` as @${authState.username}` : "";
 
     return {
       content: [
         {
-          type: 'text',
+          type: "text",
           text: `✓ Twitter/X connected${usernameText}. You can now post, reply, and view your conversations.`,
         },
       ],
@@ -28,15 +28,16 @@ export async function twitterAuthStatus(
   }
 
   // Not authenticated - try to get OAuth URL
-  const { oauthUrl, state, alreadyAuthorized } = await arcadeClient.initiateAuth();
+  const { oauthUrl, state, alreadyAuthorized } =
+    await arcadeClient.initiateAuth();
 
   // If already authorized (initiateAuth detected completed status), report success
   if (alreadyAuthorized) {
     return {
       content: [
         {
-          type: 'text',
-          text: `✓ Twitter/X connected. You can now post, reply, and view your conversations.`,
+          type: "text",
+          text: "✓ Twitter/X connected. You can now post, reply, and view your conversations.",
         },
       ],
     };
@@ -44,15 +45,15 @@ export async function twitterAuthStatus(
 
   // Need actual OAuth - return JSON data for the auth-button UI app
   const authData = {
-    service: 'Twitter',
+    service: "Twitter",
     authUrl: oauthUrl,
-    state: state,
+    state,
   };
 
   return {
     content: [
       {
-        type: 'text',
+        type: "text",
         text: JSON.stringify(authData),
       },
     ],

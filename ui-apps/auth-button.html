@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ASSA Auth</title>
-  <style>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASSA Auth</title>
+    <style>
     * {
       box-sizing: border-box;
       margin: 0;
@@ -12,7 +12,8 @@
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family:
+        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       padding: 16px;
       background: transparent;
     }
@@ -81,25 +82,25 @@
       text-align: center;
       color: #6b7280;
     }
-  </style>
-</head>
-<body>
-  <div class="auth-container">
-    <div id="loading" class="loading">Loading...</div>
+    </style>
+  </head>
+  <body>
+    <div class="auth-container">
+      <div id="loading" class="loading">Loading...</div>
 
-    <!-- Step 1: Connect button -->
-    <button id="connectBtn" class="btn btn-connect hidden">
-      <span>Connect X/Twitter</span>
-    </button>
+      <!-- Step 1: Connect button -->
+      <button id="connectBtn" class="btn btn-connect hidden">
+        <span>Connect X/Twitter</span>
+      </button>
 
-    <!-- Step 2: After clicking, show "I've authorized" button -->
-    <button id="checkBtn" class="btn btn-check hidden">
-      <span>I've completed authorization</span>
-    </button>
+      <!-- Step 2: After clicking, show "I've authorized" button -->
+      <button id="checkBtn" class="btn btn-check hidden">
+        <span>I've completed authorization</span>
+      </button>
 
-    <p id="statusText" class="status-text"></p>
-  </div>
+      <p id="statusText" class="status-text"></p>
+    </div>
 
-  <script type="module" src="./auth-button.ts"></script>
-</body>
+    <script type="module" src="./auth-button.ts"></script>
+  </body>
 </html>

@@ -1,11 +1,11 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
-import { homedir } from 'os';
-import { join } from 'path';
-import { timestampFromSnowflake } from '../utils/time.js';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
+import { timestampFromSnowflake } from "../utils/time.js";
 
 // State file location: ~/.config/assa/state.json
-const CONFIG_DIR = join(homedir(), '.config', 'assa');
-const STATE_FILE = join(CONFIG_DIR, 'state.json');
+const CONFIG_DIR = join(homedir(), ".config", "assa");
+const STATE_FILE = join(CONFIG_DIR, "state.json");
 
 interface DismissedTweet {
   dismissed_at: string;
@@ -28,6 +28,9 @@ const DEFAULT_STATE: AssaState = {
 
 // In-memory cache
 let cachedState: AssaState | null = null;
+
+// Regex for stripping @ prefix from usernames (top-level for performance)
+const AT_PREFIX_REGEX = /^@/;
 
 /**
  * Ensure the config directory exists
@@ -54,7 +57,7 @@ export function loadState(): AssaState {
   }
 
   try {
-    const content = readFileSync(STATE_FILE, 'utf-8');
+    const content = readFileSync(STATE_FILE, "utf-8");
     const parsed = JSON.parse(content) as Partial<AssaState>;
 
     // Merge with defaults to handle missing fields
@@ -67,7 +70,7 @@ export function loadState(): AssaState {
 
     return cachedState;
   } catch (error) {
-    console.error('[ASSA] Failed to load state, using defaults:', error);
+    console.error("[ASSA] Failed to load state, using defaults:", error);
     cachedState = { ...DEFAULT_STATE };
     return cachedState;
   }
@@ -84,9 +87,9 @@ export function saveState(): void {
   ensureConfigDir();
 
   try {
-    writeFileSync(STATE_FILE, JSON.stringify(cachedState, null, 2), 'utf-8');
+    writeFileSync(STATE_FILE, JSON.stringify(cachedState, null, 2), "utf-8");
   } catch (error) {
-    console.error('[ASSA] Failed to save state:', error);
+    console.error("[ASSA] Failed to save state:", error);
   }
 }
 
@@ -104,7 +107,7 @@ export function getUsername(): string | null {
 export function setUsername(username: string): void {
   const state = loadState();
   // Remove @ prefix if provided
-  state.twitter_username = username.replace(/^@/, '');
+  state.twitter_username = username.replace(AT_PREFIX_REGEX, "");
   saveState();
 }
 
@@ -125,7 +128,10 @@ export function dismissTweet(tweetId: string, replyCount: number): void {
  * Check if a tweet is dismissed
  * Returns false if reply count has increased (new activity)
  */
-export function isDismissed(tweetId: string, currentReplyCount: number): boolean {
+export function isDismissed(
+  tweetId: string,
+  currentReplyCount: number
+): boolean {
   const state = loadState();
   const dismissed = state.dismissed[tweetId];
 
@@ -192,7 +198,7 @@ export function getVips(): string[] {
  */
 export function addVip(username: string): void {
   const state = loadState();
-  const cleanUsername = username.replace(/^@/, '').toLowerCase();
+  const cleanUsername = username.replace(AT_PREFIX_REGEX, "").toLowerCase();
 
   if (!state.vips.includes(cleanUsername)) {
     state.vips.push(cleanUsername);
@@ -205,8 +211,8 @@ export function addVip(username: string): void {
  */
 export function removeVip(username: string): void {
   const state = loadState();
-  const cleanUsername = username.replace(/^@/, '').toLowerCase();
-  state.vips = state.vips.filter(v => v !== cleanUsername);
+  const cleanUsername = username.replace(AT_PREFIX_REGEX, "").toLowerCase();
+  state.vips = state.vips.filter((v) => v !== cleanUsername);
   saveState();
 }
 

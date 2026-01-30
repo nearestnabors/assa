@@ -8,12 +8,12 @@
  * Cache expiration: 7 days (matches X search API limit)
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
-import { homedir } from 'os';
-import { join } from 'path';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 
-const CONFIG_DIR = join(homedir(), '.config', 'assa');
-const AVATAR_CACHE_FILE = join(CONFIG_DIR, 'avatars.json');
+const CONFIG_DIR = join(homedir(), ".config", "assa");
+const AVATAR_CACHE_FILE = join(CONFIG_DIR, "avatars.json");
 const CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 interface CachedAvatar {
@@ -53,11 +53,11 @@ function loadCache(): AvatarCache {
   }
 
   try {
-    const content = readFileSync(AVATAR_CACHE_FILE, 'utf-8');
+    const content = readFileSync(AVATAR_CACHE_FILE, "utf-8");
     cache = JSON.parse(content) as AvatarCache;
     return cache;
   } catch (error) {
-    console.error('[ASSA] Failed to load avatar cache:', error);
+    console.error("[ASSA] Failed to load avatar cache:", error);
     cache = { avatars: {} };
     return cache;
   }
@@ -67,14 +67,16 @@ function loadCache(): AvatarCache {
  * Save cache to disk
  */
 function saveCache(): void {
-  if (!cache) return;
+  if (!cache) {
+    return;
+  }
 
   ensureConfigDir();
 
   try {
-    writeFileSync(AVATAR_CACHE_FILE, JSON.stringify(cache, null, 2), 'utf-8');
+    writeFileSync(AVATAR_CACHE_FILE, JSON.stringify(cache, null, 2), "utf-8");
   } catch (error) {
-    console.error('[ASSA] Failed to save avatar cache:', error);
+    console.error("[ASSA] Failed to save avatar cache:", error);
   }
 }
 
@@ -123,12 +125,12 @@ async function fetchImageAsDataUrl(url: string): Promise<string | null> {
       return null;
     }
 
-    const contentType = response.headers.get('content-type') || 'image/jpeg';
+    const contentType = response.headers.get("content-type") || "image/jpeg";
     const buffer = await response.arrayBuffer();
-    const base64 = Buffer.from(buffer).toString('base64');
+    const base64 = Buffer.from(buffer).toString("base64");
     return `data:${contentType};base64,${base64}`;
   } catch (error) {
-    console.error('[ASSA] Failed to fetch avatar:', error);
+    console.error("[ASSA] Failed to fetch avatar:", error);
     return null;
   }
 }
@@ -149,7 +151,8 @@ export async function getAvatar(
   }
 
   // Use provided URL or fall back to unavatar.io
-  const urlToFetch = profileImageUrl || `https://unavatar.io/twitter/${username}`;
+  const urlToFetch =
+    profileImageUrl || `https://unavatar.io/twitter/${username}`;
 
   // Fetch and cache
   const dataUrl = await fetchImageAsDataUrl(urlToFetch);
@@ -171,7 +174,7 @@ export async function getAvatars(
 
   // Process in parallel with a concurrency limit
   const CONCURRENCY = 5;
-  const chunks: Array<typeof users> = [];
+  const chunks: (typeof users)[] = [];
 
   for (let i = 0; i < users.length; i += CONCURRENCY) {
     chunks.push(users.slice(i, i + CONCURRENCY));

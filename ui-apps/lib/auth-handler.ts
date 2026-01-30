@@ -8,7 +8,7 @@
  * 4. Open external links safely via MCP Apps API
  */
 
-import type { App } from '@modelcontextprotocol/ext-apps';
+import type { App } from "@modelcontextprotocol/ext-apps";
 
 /**
  * Open an external URL using the MCP Apps API.
@@ -17,15 +17,15 @@ import type { App } from '@modelcontextprotocol/ext-apps';
  * Usage: await openExternalLink(app, 'https://example.com')
  */
 export async function openExternalLink(app: App, url: string): Promise<void> {
-  if (!url || typeof url !== 'string') {
-    console.error('[MCP Apps] Invalid URL provided to openExternalLink:', url);
+  if (!url || typeof url !== "string") {
+    console.error("[MCP Apps] Invalid URL provided to openExternalLink:", url);
     return;
   }
   try {
     // MCP Apps SDK expects { url: string } object, NOT just a string
     await app.openLink({ url });
   } catch (error) {
-    console.error('[MCP Apps] Failed to open external link:', error);
+    console.error("[MCP Apps] Failed to open external link:", error);
     throw error;
   }
 }
@@ -46,9 +46,9 @@ export interface AuthRequiredResponse {
  */
 export function isAuthRequired(data: unknown): data is AuthRequiredResponse {
   return (
-    typeof data === 'object' &&
+    typeof data === "object" &&
     data !== null &&
-    'authRequired' in data &&
+    "authRequired" in data &&
     (data as AuthRequiredResponse).authRequired === true
   );
 }
@@ -61,14 +61,14 @@ export function parseToolResult(result: {
   content?: Array<{ type: string; text?: string }>;
   isError?: boolean;
 }): { data: unknown; isError: boolean } | null {
-  const textContent = result.content?.find((c) => c.type === 'text');
-  if (!textContent || !('text' in textContent)) {
+  const textContent = result.content?.find((c) => c.type === "text");
+  if (!(textContent && "text" in textContent)) {
     return null;
   }
 
   try {
     const data = JSON.parse(textContent.text as string);
-    return { data, isError: result.isError || false };
+    return { data, isError: result.isError };
   } catch {
     // Not JSON, might be a plain error message
     return {
@@ -87,20 +87,28 @@ export function renderAuthRequired(
   authData: AuthRequiredResponse,
   app: App
 ): void {
-  console.log('[Auth Handler] Rendering auth UI with data:', JSON.stringify(authData, null, 2));
-  console.log('[Auth Handler] authUrl value:', authData.authUrl, 'type:', typeof authData.authUrl);
+  console.log(
+    "[Auth Handler] Rendering auth UI with data:",
+    JSON.stringify(authData, null, 2)
+  );
+  console.log(
+    "[Auth Handler] authUrl value:",
+    authData.authUrl,
+    "type:",
+    typeof authData.authUrl
+  );
 
   // Save original content to restore after auth
   const originalContent = container.innerHTML;
 
   // Validate authUrl
   if (!authData.authUrl) {
-    console.error('[Auth Handler] No authUrl in auth data');
+    console.error("[Auth Handler] No authUrl in auth data");
     container.innerHTML = `
       <div class="auth-required">
         <p class="auth-message">Authentication required but failed to get auth URL. Please try again.</p>
       </div>
-    ` + originalContent;
+    ${originalContent}`;
     return;
   }
 
@@ -118,40 +126,48 @@ export function renderAuthRequired(
     <div class="original-content hidden">${originalContent}</div>
   `;
 
-  const authBtn = container.querySelector('#authBtn') as HTMLButtonElement;
-  const authCheckBtn = container.querySelector('#authCheckBtn') as HTMLButtonElement;
-  const originalContentEl = container.querySelector('.original-content') as HTMLElement;
+  const authBtn = container.querySelector("#authBtn") as HTMLButtonElement;
+  const authCheckBtn = container.querySelector(
+    "#authCheckBtn"
+  ) as HTMLButtonElement;
+  const _originalContentEl = container.querySelector(
+    ".original-content"
+  ) as HTMLElement;
 
   // Step 1: Open OAuth URL
-  authBtn.addEventListener('click', async () => {
-    console.log('[Auth Handler] Opening OAuth URL:', authData.authUrl);
-    console.log('[Auth Handler] Full authData:', JSON.stringify(authData));
+  authBtn.addEventListener("click", async () => {
+    console.log("[Auth Handler] Opening OAuth URL:", authData.authUrl);
+    console.log("[Auth Handler] Full authData:", JSON.stringify(authData));
 
     // Defensive check - make sure we have a valid URL
-    if (!authData.authUrl || typeof authData.authUrl !== 'string' || authData.authUrl.trim() === '') {
-      console.error('[Auth Handler] Invalid authUrl:', authData.authUrl);
-      authBtn.textContent = 'Error - no auth URL';
+    if (
+      !authData.authUrl ||
+      typeof authData.authUrl !== "string" ||
+      authData.authUrl.trim() === ""
+    ) {
+      console.error("[Auth Handler] Invalid authUrl:", authData.authUrl);
+      authBtn.textContent = "Error - no auth URL";
       return;
     }
 
     try {
       await openExternalLink(app, authData.authUrl);
-      authBtn.classList.add('hidden');
-      authCheckBtn.classList.remove('hidden');
+      authBtn.classList.add("hidden");
+      authCheckBtn.classList.remove("hidden");
     } catch (error) {
-      console.error('[Auth Handler] Failed to open link:', error);
-      authBtn.textContent = 'Error - try again';
+      console.error("[Auth Handler] Failed to open link:", error);
+      authBtn.textContent = "Error - try again";
     }
   });
 
   // Step 2: Check auth status
-  authCheckBtn.addEventListener('click', async () => {
+  authCheckBtn.addEventListener("click", async () => {
     authCheckBtn.disabled = true;
-    authCheckBtn.textContent = 'Checking...';
+    authCheckBtn.textContent = "Checking...";
 
     try {
       const result = await app.callServerTool({
-        name: 'twitter_auth_status',
+        name: "twitter_auth_status",
         arguments: {},
       });
 
@@ -162,21 +178,23 @@ export function renderAuthRequired(
           <div class="auth-success">
             <p>✓ Authorization successful! You can now retry your action.</p>
           </div>
-        ` + originalContent;
+        ${originalContent}`;
 
         // Re-enable any buttons that might have been disabled
-        const replyBtn = container.querySelector('[data-action="reply"]') as HTMLButtonElement;
+        const replyBtn = container.querySelector(
+          '[data-action="reply"]'
+        ) as HTMLButtonElement;
         if (replyBtn) {
           replyBtn.disabled = false;
-          replyBtn.textContent = 'Reply';
+          replyBtn.textContent = "Reply";
         }
       } else {
         // Still not authorized
-        authCheckBtn.textContent = 'Not detected - try again';
+        authCheckBtn.textContent = "Not detected - try again";
         authCheckBtn.disabled = false;
       }
-    } catch (error) {
-      authCheckBtn.textContent = 'Error - try again';
+    } catch (_error) {
+      authCheckBtn.textContent = "Error - try again";
       authCheckBtn.disabled = false;
     }
   });
@@ -186,7 +204,7 @@ export function renderAuthRequired(
  * Escape HTML to prevent XSS
  */
 function escapeHtml(text: string): string {
-  const div = document.createElement('div');
+  const div = document.createElement("div");
   div.textContent = text;
   return div.innerHTML;
 }
