@@ -1,4 +1,4 @@
-import { dismissTweet } from '../state/manager.js';
+import { dismissTweet } from "../state/manager.js";
 
 interface DismissConversationArgs {
   tweet_id?: string;
@@ -9,21 +9,21 @@ interface DismissConversationArgs {
  * Tool: x_dismiss_conversation
  * Dismisses a conversation (hides it from the list until new activity)
  */
-export async function xDismissConversation(
+export function xDismissConversation(
   args: DismissConversationArgs
 ): Promise<unknown> {
   const { tweet_id, reply_count } = args;
 
   if (!tweet_id) {
-    return {
+    return Promise.resolve({
       content: [
         {
-          type: 'text',
-          text: 'Missing required parameter: tweet_id',
+          type: "text",
+          text: "Missing required parameter: tweet_id",
         },
       ],
       isError: true,
-    };
+    });
   }
 
   // Default reply count to 0 if not provided
@@ -32,12 +32,12 @@ export async function xDismissConversation(
   // Dismiss the tweet
   dismissTweet(tweet_id, currentReplyCount);
 
-  return {
+  return Promise.resolve({
     content: [
       {
-        type: 'text',
-        text: `Conversation dismissed. It will reappear if there's new activity (new replies).\n\nUse x_conversations to see your remaining conversations.`,
+        type: "text",
+        text: "Conversation dismissed. It will reappear if there's new activity (new replies).\n\nUse x_conversations to see your remaining conversations.",
       },
     ],
-  };
+  });
 }

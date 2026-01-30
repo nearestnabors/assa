@@ -15,7 +15,11 @@
  * Client UIs can check for `authRequired: true` to show the auth flow.
  */
 
-import { arcadeClient, AuthRequiredError, clearAuthCache } from '../arcade/client.js';
+import {
+  AuthRequiredError,
+  arcadeClient,
+  clearAuthCache,
+} from "../arcade/client.js";
 
 /**
  * Structured auth response that clients can detect and handle
@@ -37,50 +41,61 @@ async function createAuthResponse(
   existingAuthUrl?: string,
   existingState?: string
 ): Promise<unknown> {
-  console.error('[ASSA Auth] createAuthResponse called');
-  console.error('[ASSA Auth] existingAuthUrl:', existingAuthUrl);
-  console.error('[ASSA Auth] existingState:', existingState);
+  console.error("[ASSA Auth] createAuthResponse called");
+  console.error("[ASSA Auth] existingAuthUrl:", existingAuthUrl);
+  console.error("[ASSA Auth] existingState:", existingState);
 
   // If we already have an auth URL from a caught AuthRequiredError, use it directly
   if (existingAuthUrl) {
-    console.error('[ASSA Auth] Using existing OAuth URL from error');
+    console.error("[ASSA Auth] Using existing OAuth URL from error");
     const authData: AuthRequiredResponse = {
       authRequired: true,
-      service: 'X',
+      service: "X",
       authUrl: existingAuthUrl,
-      state: existingState || '',
+      state: existingState || "",
       message,
     };
 
     const response = {
       content: [
         {
-          type: 'text',
+          type: "text",
           text: JSON.stringify(authData),
         },
       ],
     };
-    console.error('[ASSA Auth] Returning auth response:', JSON.stringify(response, null, 2));
+    console.error(
+      "[ASSA Auth] Returning auth response:",
+      JSON.stringify(response, null, 2)
+    );
     return response;
   }
 
   // Otherwise, initiate a new auth flow
   try {
-    const { oauthUrl, state, alreadyAuthorized } = await arcadeClient.initiateAuth();
-    console.error('[ASSA Auth] Got OAuth URL:', oauthUrl, 'alreadyAuthorized:', alreadyAuthorized);
+    const { oauthUrl, state, alreadyAuthorized } =
+      await arcadeClient.initiateAuth();
+    console.error(
+      "[ASSA Auth] Got OAuth URL:",
+      oauthUrl,
+      "alreadyAuthorized:",
+      alreadyAuthorized
+    );
 
     // Handle weird state: Arcade says we're authorized but tool failed
     if (alreadyAuthorized && !oauthUrl) {
-      console.error('[ASSA Auth] Arcade reports authorized but tool failed - permissions mismatch');
+      console.error(
+        "[ASSA Auth] Arcade reports authorized but tool failed - permissions mismatch"
+      );
       return {
         content: [
           {
-            type: 'text',
+            type: "text",
             text: JSON.stringify({
               error: true,
               message:
-                'Your X connection needs to be refreshed. ' +
-                'Please try again in a few minutes, or restart the app to reconnect.',
+                "Your X connection needs to be refreshed. " +
+                "Please try again in a few minutes, or restart the app to reconnect.",
             }),
           },
         ],
@@ -89,14 +104,14 @@ async function createAuthResponse(
     }
 
     if (!oauthUrl) {
-      console.error('[ASSA Auth] No OAuth URL returned from initiateAuth');
+      console.error("[ASSA Auth] No OAuth URL returned from initiateAuth");
       return {
         content: [
           {
-            type: 'text',
+            type: "text",
             text: JSON.stringify({
               error: true,
-              message: 'Could not get authorization URL. Please try again.',
+              message: "Could not get authorization URL. Please try again.",
             }),
           },
         ],
@@ -106,28 +121,31 @@ async function createAuthResponse(
 
     const authData: AuthRequiredResponse = {
       authRequired: true,
-      service: 'X',
+      service: "X",
       authUrl: oauthUrl,
-      state: state,
+      state,
       message,
     };
 
     const response = {
       content: [
         {
-          type: 'text',
+          type: "text",
           text: JSON.stringify(authData),
         },
       ],
     };
-    console.error('[ASSA Auth] Returning auth response:', JSON.stringify(response, null, 2));
+    console.error(
+      "[ASSA Auth] Returning auth response:",
+      JSON.stringify(response, null, 2)
+    );
     return response;
   } catch (error) {
-    console.error('[ASSA Auth] Failed to get OAuth URL:', error);
+    console.error("[ASSA Auth] Failed to get OAuth URL:", error);
     return {
       content: [
         {
-          type: 'text',
+          type: "text",
           text: JSON.stringify({
             error: true,
             message: `Failed to initiate authentication: ${error instanceof Error ? error.message : String(error)}`,
@@ -151,7 +169,7 @@ export async function ensureAuth(): Promise<unknown | null> {
   }
 
   return createAuthResponse(
-    'You need to connect your X account first. Click the button below to authorize.'
+    "You need to connect your X account first. Click the button below to authorize."
   );
 }
 
@@ -166,35 +184,37 @@ export async function ensureAuth(): Promise<unknown | null> {
  */
 export async function handleToolError(error: unknown): Promise<unknown> {
   const errorMessage = error instanceof Error ? error.message : String(error);
-  console.error('[ASSA Auth] handleToolError called with:', errorMessage);
+  console.error("[ASSA Auth] handleToolError called with:", errorMessage);
 
   // Check if it's an AuthRequiredError
   if (error instanceof AuthRequiredError) {
-    console.error('[ASSA Auth] AuthRequiredError detected');
-    console.error('[ASSA Auth] authUrl from error:', error.authUrl);
-    console.error('[ASSA Auth] authId from error:', error.authId);
+    console.error("[ASSA Auth] AuthRequiredError detected");
+    console.error("[ASSA Auth] authUrl from error:", error.authUrl);
+    console.error("[ASSA Auth] authId from error:", error.authId);
 
     // Clear cached auth state
     clearAuthCache();
 
     // ALWAYS initiate a fresh auth flow with full permissions (via X.PostTweet)
     // Don't use the URL from the error - it might only have read scopes
-    console.error('[ASSA Auth] Initiating fresh auth flow with full permissions');
-    return createAuthResponse(
-      'You need to connect your X account first. Click the button below to authorize.'
+    console.error(
+      "[ASSA Auth] Initiating fresh auth flow with full permissions"
+    );
+    return await createAuthResponse(
+      "You need to connect your X account first. Click the button below to authorize."
     );
   }
 
   // Check for other auth-related error messages
   if (
-    errorMessage.includes('authorization_required') ||
-    errorMessage.includes('tool_authorization_required') ||
-    errorMessage.includes('403')
+    errorMessage.includes("authorization_required") ||
+    errorMessage.includes("tool_authorization_required") ||
+    errorMessage.includes("403")
   ) {
-    console.error('[ASSA Auth] Auth-related error message detected');
+    console.error("[ASSA Auth] Auth-related error message detected");
     clearAuthCache();
-    return createAuthResponse(
-      'Your X authorization has expired or needs additional permissions. Please re-authorize to continue.'
+    return await createAuthResponse(
+      "Your X authorization has expired or needs additional permissions. Please re-authorize to continue."
     );
   }
 
@@ -202,7 +222,7 @@ export async function handleToolError(error: unknown): Promise<unknown> {
   return {
     content: [
       {
-        type: 'text',
+        type: "text",
         text: JSON.stringify({
           error: true,
           message: errorMessage,
