@@ -124,9 +124,10 @@ function renderConversations(data: ConversationsData): void {
     .map((conv) => {
       const relativeTime = formatRelativeTime(conv.created_at);
       const initials = getInitials(conv.author_display_name || conv.author_username || '?');
+      // Use data-src for deferred loading (CSP race condition workaround)
       const hasAvatarUrl = !!conv.author_avatar_url;
       const avatarHtml = hasAvatarUrl
-        ? `<img class="avatar" src="${escapeHtml(conv.author_avatar_url!)}" alt="${escapeHtml(conv.author_display_name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="avatar-placeholder" style="display:none">${escapeHtml(initials)}</div>`
+        ? `<img class="avatar" data-src="${escapeHtml(conv.author_avatar_url!)}" alt="${escapeHtml(conv.author_display_name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="avatar-placeholder">${escapeHtml(initials)}</div>`
         : `<div class="avatar-placeholder">${escapeHtml(initials)}</div>`;
 
       return `
@@ -155,6 +156,22 @@ function renderConversations(data: ConversationsData): void {
     .join('');
 
   attachConversationListeners();
+
+  // Defer image loading to allow CSP to be applied (race condition workaround)
+  setTimeout(() => {
+    document.querySelectorAll('img[data-src]').forEach((img) => {
+      const src = img.getAttribute('data-src');
+      if (src) {
+        (img as HTMLImageElement).src = src;
+        img.addEventListener('load', () => {
+          const placeholder = img.nextElementSibling as HTMLElement;
+          if (placeholder?.classList.contains('avatar-placeholder')) {
+            placeholder.style.display = 'none';
+          }
+        });
+      }
+    });
+  }, 100);
 }
 
 function attachConversationListeners(): void {
