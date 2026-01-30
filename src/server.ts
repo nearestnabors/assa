@@ -43,7 +43,7 @@ const TOOLS: Tool[] = [
   // === X Tools ===
   {
     name: 'x_auth_status',
-    description: 'Check X authentication status. IMPORTANT: The UI handles everything - DO NOT explain or elaborate. Just acknowledge briefly.',
+    description: 'Check X authentication status. IMPORTANT: The UI handles everything. Your ONLY response should be one short sentence. Do NOT explain, offer help, or ask follow-up questions.',
     inputSchema: {
       type: 'object',
       properties: {},
@@ -109,7 +109,7 @@ const TOOLS: Tool[] = [
   },
   {
     name: 'x_conversations',
-    description: 'Show X conversations awaiting your reply. IMPORTANT: The UI displays everything - DO NOT summarize, list, or recap the conversations. Just say "Here are your conversations" and nothing more.',
+    description: 'Show X conversations awaiting your reply. IMPORTANT: The UI shows everything the user needs. Your ONLY response should be a single short sentence like "Here are your conversations." Do NOT offer help, create todos, or ask follow-up questions.',
     inputSchema: {
       type: 'object',
       properties: {},
