@@ -43,7 +43,7 @@ const TOOLS: Tool[] = [
   // === X Tools ===
   {
     name: 'x_auth_status',
-    description: 'Check if X is authenticated via Arcade. Returns an auth button UI if not connected. The UI handles everything - keep your response brief.',
+    description: 'Check X authentication status. IMPORTANT: The UI handles everything - DO NOT explain or elaborate. Just acknowledge briefly.',
     inputSchema: {
       type: 'object',
       properties: {},
@@ -109,7 +109,7 @@ const TOOLS: Tool[] = [
   },
   {
     name: 'x_conversations',
-    description: 'Show X conversations awaiting your reply. Displays mentions that you have not yet responded to. The UI displays all conversations visually - do not summarize or recap the data in your response.',
+    description: 'Show X conversations awaiting your reply. IMPORTANT: The UI displays everything - DO NOT summarize, list, or recap the conversations. Just say "Here are your conversations" and nothing more.',
     inputSchema: {
       type: 'object',
       properties: {},
