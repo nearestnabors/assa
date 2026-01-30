@@ -6,8 +6,8 @@
  * which calls x_post_tweet directly via MCP Apps.
  */
 
-import { arcadeClient } from '../arcade/client.js';
-import { ensureAuth } from '../auth/manager.js';
+import { arcadeClient } from "../arcade/client.js";
+import { ensureAuth } from "../auth/manager.js";
 
 interface DraftTweetArgs {
   text: string;
@@ -15,10 +15,16 @@ interface DraftTweetArgs {
   quote_tweet_id?: string;
 }
 
+interface TweetContext {
+  author: { handle: string };
+  text: string;
+}
+
 export async function xDraftTweet(
   args: Record<string, unknown>
 ): Promise<unknown> {
-  const { text, reply_to_id, quote_tweet_id } = args as unknown as DraftTweetArgs;
+  const { text, reply_to_id, quote_tweet_id } =
+    args as unknown as DraftTweetArgs;
 
   // Check authentication
   const authResult = await ensureAuth();
@@ -31,7 +37,7 @@ export async function xDraftTweet(
     return {
       content: [
         {
-          type: 'text',
+          type: "text",
           text: `Tweet is too long (${text.length}/280 characters). Please shorten it.`,
         },
       ],
@@ -39,7 +45,7 @@ export async function xDraftTweet(
   }
 
   // Fetch reply context if replying
-  let replyContext = null;
+  let replyContext: TweetContext | null = null;
   if (reply_to_id) {
     try {
       replyContext = await arcadeClient.getTweet(reply_to_id);
@@ -49,7 +55,7 @@ export async function xDraftTweet(
   }
 
   // Fetch quote tweet context if quote tweeting
-  let quoteContext = null;
+  let quoteContext: TweetContext | null = null;
   if (quote_tweet_id) {
     try {
       quoteContext = await arcadeClient.getTweet(quote_tweet_id);
@@ -81,7 +87,7 @@ export async function xDraftTweet(
   return {
     content: [
       {
-        type: 'text',
+        type: "text",
         text: JSON.stringify(draftData),
       },
     ],

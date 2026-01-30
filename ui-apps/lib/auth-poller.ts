@@ -22,8 +22,8 @@
  *   await poller.checkAuthStatus();
  */
 
-import type { App } from '@modelcontextprotocol/ext-apps';
-import { openExternalLink } from './auth-handler.js';
+import type { App } from "@modelcontextprotocol/ext-apps";
+import { openExternalLink } from "./auth-handler.js";
 
 export interface AuthPollerOptions {
   /** Called when auth completes successfully */
@@ -49,13 +49,18 @@ export interface AuthPoller {
   isPolling: () => boolean;
 }
 
-export function createAuthPoller(app: App, options: AuthPollerOptions): AuthPoller {
+export function createAuthPoller(
+  app: App,
+  options: AuthPollerOptions
+): AuthPoller {
   const {
     onAuthComplete,
-    onStatusChange = () => {},
+    onStatusChange = () => {
+      /* no-op default */
+    },
     onError = console.error,
     pollInterval = 2000,
-    authStatusTool = 'x_auth_status',
+    authStatusTool = "x_auth_status",
   } = options;
 
   let intervalId: number | null = null;
@@ -76,12 +81,14 @@ export function createAuthPoller(app: App, options: AuthPollerOptions): AuthPoll
         arguments: {},
       });
 
-      const textContent = result.content?.find((c: { type: string }) => c.type === 'text');
-      if (textContent && 'text' in textContent) {
+      const textContent = result.content?.find(
+        (c: { type: string }) => c.type === "text"
+      );
+      if (textContent && "text" in textContent) {
         const text = textContent.text as string;
-        if (text.includes('connected')) {
+        if (text.includes("connected")) {
           stopPolling();
-          onStatusChange('Loading...');
+          onStatusChange("Loading...");
           await onAuthComplete();
           return true;
         }
@@ -102,7 +109,7 @@ export function createAuthPoller(app: App, options: AuthPollerOptions): AuthPoll
   const startAuth = async (authUrl: string): Promise<void> => {
     try {
       await openExternalLink(app, authUrl);
-      onStatusChange('Waiting for authorization...');
+      onStatusChange("Waiting for authorization...");
       startPolling();
     } catch (error) {
       onError(error instanceof Error ? error : new Error(String(error)));
@@ -187,9 +194,9 @@ export function renderAuthPollerUI(
   onAuthComplete: () => Promise<void>
 ): void {
   // Inject styles if not already present
-  if (!document.getElementById('auth-poller-styles')) {
-    const styleEl = document.createElement('style');
-    styleEl.id = 'auth-poller-styles';
+  if (!document.getElementById("auth-poller-styles")) {
+    const styleEl = document.createElement("style");
+    styleEl.id = "auth-poller-styles";
     styleEl.textContent = authPollerStyles;
     document.head.appendChild(styleEl);
   }
@@ -203,33 +210,33 @@ export function renderAuthPollerUI(
     </div>
   `;
 
-  const btn = container.querySelector('#authPollerBtn') as HTMLButtonElement;
-  const status = container.querySelector('#authPollerStatus') as HTMLElement;
+  const btn = container.querySelector("#authPollerBtn") as HTMLButtonElement;
+  const status = container.querySelector("#authPollerStatus") as HTMLElement;
 
   const poller = createAuthPoller(app, {
     onAuthComplete,
     onStatusChange: (msg) => {
       status.textContent = msg;
-      status.className = 'auth-poller-status';
+      status.className = "auth-poller-status";
     },
     onError: (error) => {
       status.textContent = `Error: ${error.message}`;
-      status.className = 'auth-poller-status error';
+      status.className = "auth-poller-status error";
       btn.disabled = false;
       btn.textContent = `Connect ${authData.service}`;
     },
   });
 
-  btn.addEventListener('click', async () => {
+  btn.addEventListener("click", async () => {
     btn.disabled = true;
-    btn.textContent = 'Opening...';
+    btn.textContent = "Opening...";
     await poller.startAuth(authData.authUrl);
-    btn.classList.add('hidden');
+    btn.classList.add("hidden");
   });
 }
 
 function escapeHtml(text: string): string {
-  const div = document.createElement('div');
+  const div = document.createElement("div");
   div.textContent = text;
   return div.innerHTML;
 }
