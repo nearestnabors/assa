@@ -122,6 +122,96 @@ bun test:watch
 bun run build
 ```
 
+## Testing
+
+ASSA uses [Bun's built-in test runner](https://bun.sh/docs/cli/test) with Jest-compatible syntax.
+
+### Running Tests
+
+```bash
+# Run all tests
+bun test
+
+# Run tests in watch mode (re-runs on file changes)
+bun test:watch
+
+# Run a specific test file
+bun test src/__tests__/utils/time.test.ts
+
+# Run tests matching a pattern
+bun test --grep "snowflake"
+```
+
+### Test Structure
+
+Tests are located in `src/__tests__/` mirroring the source structure:
+
+```
+src/
+├── __tests__/
+│   ├── state/
+│   │   └── manager.test.ts    # State management tests
+│   ├── tools/
+│   │   └── dismiss-conversation.test.ts
+│   └── utils/
+│       └── time.test.ts       # Time utility tests
+├── state/
+│   └── manager.ts
+├── tools/
+│   └── ...
+└── utils/
+    └── time.ts
+```
+
+### Writing Tests
+
+Create a `.test.ts` file in the appropriate `__tests__` subdirectory:
+
+```typescript
+import { describe, expect, test } from "bun:test";
+import { myFunction } from "../../utils/my-module.js";
+
+describe("myFunction", () => {
+  test("does something expected", () => {
+    const result = myFunction("input");
+    expect(result).toBe("expected output");
+  });
+});
+```
+
+### Mocking
+
+Use `mock.module()` to mock Node.js modules:
+
+```typescript
+import { mock } from "bun:test";
+
+// Mock before importing the module that uses it
+mock.module("node:os", () => ({
+  homedir: () => "/tmp/test-home",
+}));
+
+// Now import your module
+import { myFunction } from "../../state/manager.js";
+```
+
+### Test Isolation
+
+When testing stateful modules, use unique IDs and clean up between tests:
+
+```typescript
+import { beforeEach } from "bun:test";
+
+let testCounter = 0;
+function uniqueId(prefix: string): string {
+  return `${prefix}_${Date.now()}_${++testCounter}`;
+}
+
+beforeEach(() => {
+  clearState(); // Reset shared state
+});
+```
+
 ## Getting an Arcade API Key
 
 1. Go to [arcade.dev](https://arcade.dev)
