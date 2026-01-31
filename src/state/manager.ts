@@ -198,7 +198,9 @@ export function pruneStaleReplies(currentMentionIds: string[]): number {
   const initialLength = state.replied_to.length;
 
   // Keep only IDs that are still in the current API results
-  state.replied_to = state.replied_to.filter((tweetId) => currentSet.has(tweetId));
+  state.replied_to = state.replied_to.filter((tweetId) =>
+    currentSet.has(tweetId)
+  );
 
   const prunedCount = initialLength - state.replied_to.length;
   if (prunedCount > 0) {

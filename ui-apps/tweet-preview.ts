@@ -160,6 +160,7 @@ editBtn.addEventListener("click", async () => {
 });
 
 // Post tweet with auth handling
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: handles auth flow and multiple result states
 async function postTweet(): Promise<void> {
   if (!draft) {
     return;

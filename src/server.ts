@@ -7,45 +7,46 @@
  * Platform: X via Arcade.dev
  */
 
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { readFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { RESOURCE_MIME_TYPE } from "@modelcontextprotocol/ext-apps/server";
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import {
   CallToolRequestSchema,
-  ListToolsRequestSchema,
+  type CallToolResult,
   ListResourcesRequestSchema,
+  ListToolsRequestSchema,
   ReadResourceRequestSchema,
   type Tool,
-  type CallToolResult,
-} from '@modelcontextprotocol/sdk/types.js';
-import { RESOURCE_MIME_TYPE } from '@modelcontextprotocol/ext-apps/server';
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
+} from "@modelcontextprotocol/sdk/types.js";
 
 // X tools
-import { xAuthStatus } from './tools/auth-status.js';
-import { xDraftTweet } from './tools/draft-tweet.js';
-import { xPostTweet } from './tools/post-tweet.js';
-import { xConversations, xGetConversations } from './tools/conversations.js';
-import { xDismissConversation } from './tools/dismiss-conversation.js';
+import { xAuthStatus } from "./tools/auth-status.js";
+import { xConversations, xGetConversations } from "./tools/conversations.js";
+import { xDismissConversation } from "./tools/dismiss-conversation.js";
+import { xDraftTweet } from "./tools/draft-tweet.js";
+import { xPostTweet } from "./tools/post-tweet.js";
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = dirname(__filename);
 
 // UI Resource URIs
 const UI_RESOURCES = {
-  authButton: 'ui://assa/auth-button.html',
-  tweetPreview: 'ui://assa/tweet-preview.html',
-  conversationList: 'ui://assa/conversation-list.html',
+  authButton: "ui://assa/auth-button.html",
+  tweetPreview: "ui://assa/tweet-preview.html",
+  conversationList: "ui://assa/conversation-list.html",
 };
 
 // Tool definitions for MCP with UI metadata
 const TOOLS: Tool[] = [
   // === X Tools ===
   {
-    name: 'x_auth_status',
-    description: 'Check X authentication status. IMPORTANT: The UI handles everything. Your ONLY response should be one short sentence. Do NOT explain, offer help, or ask follow-up questions.',
+    name: "x_auth_status",
+    description:
+      "Check X authentication status. IMPORTANT: The UI handles everything. Your ONLY response should be one short sentence. Do NOT explain, offer help, or ask follow-up questions.",
     inputSchema: {
-      type: 'object',
+      type: "object",
       properties: {},
       required: [],
     },
@@ -57,25 +58,26 @@ const TOOLS: Tool[] = [
     },
   },
   {
-    name: 'x_draft_tweet',
-    description: 'Create a draft tweet and show a preview UI for approval before posting.',
+    name: "x_draft_tweet",
+    description:
+      "Create a draft tweet and show a preview UI for approval before posting.",
     inputSchema: {
-      type: 'object',
+      type: "object",
       properties: {
         text: {
-          type: 'string',
-          description: 'Tweet content (max 280 characters)',
+          type: "string",
+          description: "Tweet content (max 280 characters)",
         },
         reply_to_id: {
-          type: 'string',
-          description: 'Tweet ID to reply to (optional)',
+          type: "string",
+          description: "Tweet ID to reply to (optional)",
         },
         quote_tweet_id: {
-          type: 'string',
-          description: 'Tweet ID to quote (optional)',
+          type: "string",
+          description: "Tweet ID to quote (optional)",
         },
       },
-      required: ['text'],
+      required: ["text"],
     },
     // _meta.ui links tool to UI resource
     _meta: {
@@ -85,33 +87,35 @@ const TOOLS: Tool[] = [
     },
   },
   {
-    name: 'x_post_tweet',
-    description: 'Post a tweet to X. Usually called from the draft preview UI after user approval.',
+    name: "x_post_tweet",
+    description:
+      "Post a tweet to X. Usually called from the draft preview UI after user approval.",
     inputSchema: {
-      type: 'object',
+      type: "object",
       properties: {
         text: {
-          type: 'string',
-          description: 'Tweet content (max 280 characters)',
+          type: "string",
+          description: "Tweet content (max 280 characters)",
         },
         reply_to_id: {
-          type: 'string',
-          description: 'Tweet ID to reply to (optional)',
+          type: "string",
+          description: "Tweet ID to reply to (optional)",
         },
         quote_tweet_id: {
-          type: 'string',
-          description: 'Tweet ID to quote (optional)',
+          type: "string",
+          description: "Tweet ID to quote (optional)",
         },
       },
-      required: ['text'],
+      required: ["text"],
     },
     // No UI - this is a data-only tool called from tweet-preview UI
   },
   {
-    name: 'x_conversations',
-    description: 'Show X conversations awaiting your reply. IMPORTANT: The UI shows everything the user needs. Your ONLY response should be a single short sentence like "Here are your conversations." Do NOT offer help, create todos, or ask follow-up questions.',
+    name: "x_conversations",
+    description:
+      'Show X conversations awaiting your reply. IMPORTANT: The UI shows everything the user needs. Your ONLY response should be a single short sentence like "Here are your conversations." Do NOT offer help, create todos, or ask follow-up questions.',
     inputSchema: {
-      type: 'object',
+      type: "object",
       properties: {},
       required: [],
     },
@@ -123,18 +127,20 @@ const TOOLS: Tool[] = [
     },
   },
   {
-    name: 'x_get_conversations',
-    description: 'Internal tool to fetch conversation data for the UI with pagination.',
+    name: "x_get_conversations",
+    description:
+      "Internal tool to fetch conversation data for the UI with pagination.",
     inputSchema: {
-      type: 'object',
+      type: "object",
       properties: {
         limit: {
-          type: 'number',
-          description: 'Maximum number of conversations to return (default: 10)',
+          type: "number",
+          description:
+            "Maximum number of conversations to return (default: 10)",
         },
         offset: {
-          type: 'number',
-          description: 'Number of conversations to skip (for pagination)',
+          type: "number",
+          description: "Number of conversations to skip (for pagination)",
         },
       },
       required: [],
@@ -142,26 +148,27 @@ const TOOLS: Tool[] = [
     // Hidden from model - only callable by UI apps
     _meta: {
       ui: {
-        visibility: ['app'],
+        visibility: ["app"],
       },
     },
   },
   {
-    name: 'x_dismiss_conversation',
-    description: 'Dismiss a conversation from the list. It will reappear if there is new activity (new replies).',
+    name: "x_dismiss_conversation",
+    description:
+      "Dismiss a conversation from the list. It will reappear if there is new activity (new replies).",
     inputSchema: {
-      type: 'object',
+      type: "object",
       properties: {
         tweet_id: {
-          type: 'string',
-          description: 'The tweet ID to dismiss',
+          type: "string",
+          description: "The tweet ID to dismiss",
         },
         reply_count: {
-          type: 'number',
-          description: 'Current reply count (used to detect new activity)',
+          type: "number",
+          description: "Current reply count (used to detect new activity)",
         },
       },
-      required: ['tweet_id', 'reply_count'],
+      required: ["tweet_id", "reply_count"],
     },
     // No UI - this is a data-only tool called from conversation-list UI
   },
@@ -180,23 +187,31 @@ const toolHandlers: Record<string, ToolHandler> = {
 
 // Load bundled UI HTML from dist/ui/{name}/ui-apps/{name}.html
 async function loadUIResource(filename: string): Promise<string> {
-  const baseName = filename.replace('.html', '');
+  const baseName = filename.replace(".html", "");
   // Try from dist/ui/{name}/ui-apps/{name}.html (vite output location)
-  const filePath = path.join(__dirname, 'ui', baseName, 'ui-apps', filename);
+  const filePath = join(__dirname, "ui", baseName, "ui-apps", filename);
   try {
-    return await fs.readFile(filePath, 'utf-8');
+    return await readFile(filePath, "utf-8");
   } catch {
     // Fallback: try from project root dist/ui/{name}/ui-apps/{name}.html (for development)
-    const altPath = path.join(__dirname, '..', 'dist', 'ui', baseName, 'ui-apps', filename);
-    return await fs.readFile(altPath, 'utf-8');
+    const altPath = join(
+      __dirname,
+      "..",
+      "dist",
+      "ui",
+      baseName,
+      "ui-apps",
+      filename
+    );
+    return await readFile(altPath, "utf-8");
   }
 }
 
 export function createServer(): Server {
   const server = new Server(
     {
-      name: 'assa-mcp',
-      version: '0.2.0',
+      name: "assa-mcp",
+      version: "0.2.0",
     },
     {
       capabilities: {
@@ -207,27 +222,27 @@ export function createServer(): Server {
   );
 
   // Handle tool listing
-  server.setRequestHandler(ListToolsRequestSchema, async () => {
+  server.setRequestHandler(ListToolsRequestSchema, () => {
     return { tools: TOOLS };
   });
 
   // Handle resource listing (for MCP Apps UI resources)
-  server.setRequestHandler(ListResourcesRequestSchema, async () => {
+  server.setRequestHandler(ListResourcesRequestSchema, () => {
     return {
       resources: [
         {
           uri: UI_RESOURCES.authButton,
-          name: 'Auth Button UI',
+          name: "Auth Button UI",
           mimeType: RESOURCE_MIME_TYPE,
         },
         {
           uri: UI_RESOURCES.tweetPreview,
-          name: 'Tweet Preview UI',
+          name: "Tweet Preview UI",
           mimeType: RESOURCE_MIME_TYPE,
         },
         {
           uri: UI_RESOURCES.conversationList,
-          name: 'Conversation List UI',
+          name: "Conversation List UI",
           mimeType: RESOURCE_MIME_TYPE,
         },
       ],
@@ -240,9 +255,9 @@ export function createServer(): Server {
 
     // Map URI to filename
     const uriToFile: Record<string, string> = {
-      [UI_RESOURCES.authButton]: 'auth-button.html',
-      [UI_RESOURCES.tweetPreview]: 'tweet-preview.html',
-      [UI_RESOURCES.conversationList]: 'conversation-list.html',
+      [UI_RESOURCES.authButton]: "auth-button.html",
+      [UI_RESOURCES.tweetPreview]: "tweet-preview.html",
+      [UI_RESOURCES.conversationList]: "conversation-list.html",
     };
 
     const filename = uriToFile[uri];
@@ -266,11 +281,14 @@ export function createServer(): Server {
 
     // Add CSP for UIs that load avatars from unavatar.io
     // auth-button also renders conversations after auth completes
-    if (uri === UI_RESOURCES.conversationList || uri === UI_RESOURCES.authButton) {
+    if (
+      uri === UI_RESOURCES.conversationList ||
+      uri === UI_RESOURCES.authButton
+    ) {
       resourceContent._meta = {
         ui: {
           csp: {
-            resourceDomains: ['https://unavatar.io'],
+            resourceDomains: ["https://unavatar.io"],
           },
         },
       };
@@ -294,11 +312,11 @@ export function createServer(): Server {
       const result = await handler(args ?? {});
       return result as CallToolResult;
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
+      const message = error instanceof Error ? error.message : "Unknown error";
       return {
         content: [
           {
-            type: 'text',
+            type: "text",
             text: `Error: ${message}`,
           },
         ],

@@ -17,6 +17,11 @@ import Arcade from "@arcadeai/arcadejs";
 import type { AuthorizationResponse } from "@arcadeai/arcadejs/resources";
 import { setUsername as setPersistentUsername } from "../state/manager.js";
 
+// Regex patterns for parsing tweet responses (moved to top level for performance)
+const TWEET_URL_REGEX = /URL:\s*(https:\/\/[^\s]+)/i;
+const TWEET_STATUS_ID_REGEX = /status\/(\d+)/;
+const TWEET_ID_REGEX = /id\s+(\d+)/i;
+
 // Types for X data
 export interface Mention {
   id: string;
@@ -578,25 +583,26 @@ const realArcadeClient: ArcadeClient = {
     // Handle string response: "Tweet with id XXXXX posted successfully. URL: https://x.com/..."
     if (typeof response === "string") {
       // Try to extract URL from the string
-      const urlMatch = response.match(/URL:\s*(https:\/\/[^\s]+)/i);
+      const urlMatch = response.match(TWEET_URL_REGEX);
       if (urlMatch) {
         tweetUrl = urlMatch[1];
         // Extract ID from URL
-        const idMatch = tweetUrl.match(/status\/(\d+)/);
+        const idMatch = tweetUrl.match(TWEET_STATUS_ID_REGEX);
         if (idMatch) {
           tweetId = idMatch[1];
         }
       }
       // Fallback: try to extract ID directly from message
       if (tweetId === "unknown") {
-        const idMatch = response.match(/id\s+(\d+)/i);
+        const idMatch = response.match(TWEET_ID_REGEX);
         if (idMatch) {
           tweetId = idMatch[1];
         }
       }
     } else if (response && typeof response === "object") {
       // Handle object response
-      tweetId = response.id || response.data?.id || response.tweet_id || "unknown";
+      tweetId =
+        response.id || response.data?.id || response.tweet_id || "unknown";
     }
 
     log("Extracted tweet ID:", tweetId);
