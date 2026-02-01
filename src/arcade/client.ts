@@ -313,6 +313,8 @@ async function verifyCachedAuth(): Promise<{
   try {
     await executeTool("X.LookupSingleUserByUsername", { username: "x" });
     log("Auth verified, using cached username:", `@${authenticatedUsername}`);
+    // Sync username to persistent state (in case it wasn't saved before)
+    setPersistentUsername(authenticatedUsername);
     return { authorized: true, username: authenticatedUsername };
   } catch (error) {
     log(
