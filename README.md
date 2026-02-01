@@ -138,43 +138,40 @@ Then make sure you're logged into Twitter/X in that browser window.
 
 Want to get your timeline digest automatically? Use a Goose recipe!
 
-#### Option 1: Deep Link (One-Click Import)
+#### Option 1: Generate a Deep Link
 
-Paste this URL in your browser to import the recipe into Goose Desktop:
+Generate a shareable deep link from the recipe file:
 
-```
-goose://recipe?url=https://raw.githubusercontent.com/nearestnabors/assa/main/assa-mcp-starter/recipes/twitter-digest.yaml
-```
-
-Or generate a deep link from your local clone:
 ```bash
 goose recipe deeplink recipes/twitter-digest.yaml
 ```
 
-**Note:** This imports the recipe but doesn't schedule it automatically. See [Scheduling the Recipe](#scheduling-the-recipe) below.
+This outputs a `goose://recipe?config=...` URL that you can share. Paste it in a browser to import the recipe into Goose Desktop.
 
-#### Option 2: YAML File (CLI)
+#### Option 2: Import YAML File in Goose Desktop
 
-1. Run it directly with Goose CLI:
-   ```bash
-   goose run --recipe recipes/twitter-digest.yaml
-   ```
+1. Open **Goose Desktop**
+2. Click **Recipes** in the sidebar
+3. Click **Import** or browse for file
+4. Select `recipes/twitter-digest.yaml`
 
-2. Or import it into Goose Desktop:
-   ```bash
-   goose recipe open recipes/twitter-digest.yaml
-   ```
+#### Option 3: Run Directly via CLI
+
+Run the recipe immediately without importing:
+
+```bash
+goose run --recipe recipes/twitter-digest.yaml
+```
 
 #### Scheduling the Recipe
 
-After importing, schedule the recipe to run automatically:
+After importing the recipe, schedule it to run automatically:
 
 1. Open **Goose Desktop**
-2. Go to **Settings** (gear icon)
-3. Select **Scheduled Tasks** or **Routines**
-4. Click **Add Schedule** or **+**
-5. Select the "Twitter Timeline Digest" recipe
-6. Set your preferred schedule (e.g., daily at 9 AM)
+2. Click **Scheduler** in the sidebar
+3. Click **Add** or **+** to create a new scheduled task
+4. Select the "Twitter Timeline Digest" recipe
+5. Set your preferred schedule
 
 **Cron schedule examples:**
 - `0 9 * * *` — 9 AM daily
