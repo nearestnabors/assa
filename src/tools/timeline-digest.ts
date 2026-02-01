@@ -427,6 +427,72 @@ async function scrollAndCollectTweets(page: Page): Promise<TimelineTweet[]> {
 }
 
 /**
+ * Format relative time from a Date
+ */
+function formatTimeAgo(date: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60_000);
+  const diffHours = Math.floor(diffMins / 60);
+
+  if (diffMins < 60) {
+    return `${diffMins}m ago`;
+  }
+  return `${diffHours}h ago`;
+}
+
+/**
+ * Format tweets as text with URLs for agent to summarize
+ * Includes tweet links so agent can include them in its summary
+ */
+function formatTweetsWithLinks(tweets: TimelineTweet[]): string {
+  if (tweets.length === 0) {
+    return "No tweets found in your Following timeline from the past 24 hours.";
+  }
+
+  const lines: string[] = [
+    `Found ${tweets.length} tweets from the past 24 hours in your Following timeline.`,
+    "",
+    "When summarizing, include markdown links to tweets like: [@username](url)",
+    "",
+  ];
+
+  for (const tweet of tweets) {
+    const timeAgo = formatTimeAgo(tweet.timestamp);
+    const tweetUrl = `https://x.com/${tweet.authorUsername}/status/${tweet.id}`;
+    const engagement = `${tweet.likes} likes, ${tweet.retweets} RTs, ${tweet.replies} replies`;
+
+    let prefix = "";
+    if (tweet.isRetweet) {
+      prefix = "[RT] ";
+    } else if (tweet.isQuote) {
+      prefix = "[QT] ";
+    }
+
+    // Truncate long tweets
+    const maxTextLength = 200;
+    const truncatedText =
+      tweet.text.length > maxTextLength
+        ? `${tweet.text.substring(0, maxTextLength)}...`
+        : tweet.text;
+
+    lines.push("---");
+    lines.push(
+      `${prefix}@${tweet.authorUsername} (${tweet.authorDisplayName}) - ${timeAgo}`
+    );
+    lines.push(`URL: ${tweetUrl}`);
+    lines.push(truncatedText);
+    lines.push(`Engagement: ${engagement}`);
+
+    if (tweet.quotedTweetText) {
+      lines.push(`> Quoted: "${tweet.quotedTweetText.substring(0, 100)}..."`);
+    }
+  }
+
+  return lines.join("\n");
+}
+
+/**
  * Tool: x_timeline_digest
  * Fetches tweets from the Following timeline for the past 24 hours
  */
@@ -453,22 +519,14 @@ export async function xTimelineDigest(): Promise<unknown> {
       tweetCount: tweets.length,
     });
 
-    // Convert tweets to UI format (Date -> ISO string)
-    const uiTweets = tweets.map((tweet) => ({
-      ...tweet,
-      timestamp: tweet.timestamp.toISOString(),
-    }));
+    // Format tweets as text with URLs for agent to summarize
+    const formattedOutput = formatTweetsWithLinks(tweets);
 
-    // Return data as JSON string for UI to parse
-    // The useMcpApp hook parses content[0].text as JSON
     return {
       content: [
         {
           type: "text",
-          text: JSON.stringify({
-            tweets: uiTweets,
-            totalCount: tweets.length,
-          }),
+          text: formattedOutput,
         },
       ],
     };

@@ -178,20 +178,16 @@ const TOOLS: Tool[] = [
   {
     name: "x_timeline_digest",
     description:
-      "Fetch and display your Twitter/X Following timeline from the past 24 hours as an interactive UI. " +
-      "IMPORTANT: This requires Chrome to be running with remote debugging enabled " +
-      "(--remote-debugging-port=9222) and you must be logged into Twitter/X in that browser. " +
-      "The UI shows clickable tweet cards that can be expanded to reply.",
+      "Fetch your Twitter/X Following timeline from the past 24 hours. " +
+      "IMPORTANT: Requires Chrome running with --remote-debugging-port=9222 and logged into Twitter/X. " +
+      "Returns tweets with links. When summarizing, ALWAYS include markdown links to each tweet you reference " +
+      "(format: [@username](tweet_url)) so users can click to view/reply on X.",
     inputSchema: {
       type: "object",
       properties: {},
       required: [],
     },
-    _meta: {
-      ui: {
-        resourceUri: UI_RESOURCES.timelineDigest,
-      },
-    },
+    // No UI - returns text for agent to summarize with links
   },
   {
     name: "x_show_tweet",
