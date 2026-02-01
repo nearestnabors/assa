@@ -425,6 +425,7 @@ async function scrollAndCollectTweets(page: Page): Promise<TimelineTweet[]> {
 
 /**
  * Format tweets for return to agent
+ * Includes tweet IDs so agent can offer to show full tweets with x_show_tweet
  */
 function formatTweetsForAgent(tweets: TimelineTweet[]): string {
   if (tweets.length === 0) {
@@ -432,7 +433,8 @@ function formatTweetsForAgent(tweets: TimelineTweet[]): string {
   }
 
   const lines: string[] = [
-    `Found ${tweets.length} tweets from the past 24 hours in your Following timeline:\n`,
+    `Found ${tweets.length} tweets from the past 24 hours in your Following timeline.`,
+    `(Tip: You can show any tweet as a rich card using x_show_tweet with its ID)\n`,
   ];
 
   for (const tweet of tweets) {
@@ -445,12 +447,20 @@ function formatTweetsForAgent(tweets: TimelineTweet[]): string {
       prefix = "[QT] ";
     }
 
+    // Truncate long tweets for the digest
+    const maxTextLength = 200;
+    const truncatedText =
+      tweet.text.length > maxTextLength
+        ? `${tweet.text.substring(0, maxTextLength)}...`
+        : tweet.text;
+
     lines.push("---");
     lines.push(
       `${prefix}@${tweet.authorUsername} (${tweet.authorDisplayName}) - ${timeAgo}`
     );
-    lines.push(tweet.text);
+    lines.push(truncatedText);
     lines.push(`Engagement: ${engagement}`);
+    lines.push(`Tweet ID: ${tweet.id}`);
 
     if (tweet.quotedTweetText) {
       lines.push(`> Quoted: "${tweet.quotedTweetText.substring(0, 100)}..."`);

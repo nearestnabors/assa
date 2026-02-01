@@ -27,6 +27,7 @@ import { xConversations, xGetConversations } from "./tools/conversations.js";
 import { xDismissConversation } from "./tools/dismiss-conversation.js";
 import { xDraftTweet } from "./tools/draft-tweet.js";
 import { xPostTweet } from "./tools/post-tweet.js";
+import { xShowTweet } from "./tools/show-tweet.js";
 import { xTimelineDigest } from "./tools/timeline-digest.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -187,6 +188,29 @@ const TOOLS: Tool[] = [
     },
     // No UI for now - returns text for agent to summarize
   },
+  {
+    name: "x_show_tweet",
+    description:
+      "Display a single tweet as a rich card with reply functionality. " +
+      "Use this when the user wants to see the full content of a specific tweet " +
+      "or when they click 'Read more' on a tweet from the timeline digest.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tweet_id: {
+          type: "string",
+          description: "The ID of the tweet to display",
+        },
+      },
+      required: ["tweet_id"],
+    },
+    // Uses conversation-list UI to display the tweet card
+    _meta: {
+      ui: {
+        resourceUri: UI_RESOURCES.conversationList,
+      },
+    },
+  },
 ];
 
 // Tool handler dispatch
@@ -198,6 +222,7 @@ const toolHandlers: Record<string, ToolHandler> = {
   x_conversations: xConversations,
   x_get_conversations: xGetConversations, // UI-only, returns full data
   x_dismiss_conversation: xDismissConversation,
+  x_show_tweet: xShowTweet,
   x_timeline_digest: xTimelineDigest,
 };
 
