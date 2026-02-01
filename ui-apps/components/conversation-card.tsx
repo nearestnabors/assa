@@ -49,17 +49,9 @@ function renderTextWithLinks(
       URL_PATTERN.lastIndex = 0;
       elements.push(
         <button
+          className="tweet-link"
           key={`url-${part}`}
           onClick={() => onOpenLink(part)}
-          style={{
-            background: "none",
-            border: "none",
-            color: "var(--color-primary)",
-            textDecoration: "underline",
-            cursor: "pointer",
-            padding: 0,
-            font: "inherit",
-          }}
           type="button"
         >
           {part}

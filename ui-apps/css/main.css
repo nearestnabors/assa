@@ -336,6 +336,25 @@ button:disabled {
   word-wrap: break-word;
 }
 
+/* Clickable links in tweet text */
+.tweet-link {
+  background: none;
+  border: none;
+  color: var(--color-link);
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+}
+
+.tweet-link:hover {
+  color: var(--color-link-hover);
+}
+
+.tweet-link:visited {
+  color: var(--color-link-visited);
+}
+
 .conversation-card .actions {
   display: flex;
   gap: 8px;

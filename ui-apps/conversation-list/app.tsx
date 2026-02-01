@@ -21,7 +21,7 @@ interface ConversationsData {
   hasMore: boolean;
 }
 
-type AppState = "loading" | "auth-required" | "loaded";
+type AppState = "loading" | "auth-required" | "loaded" | "error";
 
 const PAGE_SIZE = 10;
 
@@ -34,6 +34,7 @@ export function ConversationListApp() {
   const [hasMore, setHasMore] = useState(false);
   const [_offset, setOffset] = useState(0);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Use ref to track offset for callback stability
   const offsetRef = useRef(0);
@@ -98,6 +99,12 @@ export function ConversationListApp() {
         }
       } catch (error) {
         console.error("Failed to fetch conversations:", error);
+        setErrorMessage(
+          error instanceof Error
+            ? error.message
+            : "Failed to load conversations"
+        );
+        setAppState("error");
       }
     },
     [callTool, parseResult]
@@ -233,6 +240,33 @@ export function ConversationListApp() {
             Error: {authPoller.error.message}
           </p>
         )}
+      </div>
+    );
+  }
+
+  // Render error state
+  if (appState === "error") {
+    return (
+      <div
+        className="container flex flex-col items-center gap-4"
+        style={{ padding: 40 }}
+      >
+        <h2>Something went wrong</h2>
+        <p className="text-center text-muted">
+          {errorMessage || "Failed to load conversations"}
+        </p>
+        <Button
+          onClick={() => {
+            setAppState("loading");
+            setErrorMessage(null);
+            hasFetchedInitial.current = false;
+            fetchConversations(false);
+          }}
+          size="lg"
+          variant="primary"
+        >
+          Try Again
+        </Button>
       </div>
     );
   }

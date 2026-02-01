@@ -32,7 +32,7 @@ export function AuthButtonApp() {
   const [authData, setAuthData] = useState<AuthData | null>(null);
   const [username, setUsername] = useState<string>("");
 
-  const { initialData, callTool, openLink, sendPrompt } = useMcpApp<
+  const { initialData, callTool, openLink } = useMcpApp<
     AuthData | ConnectedData | string
   >({
     name: "ASSA Auth",
@@ -84,11 +84,6 @@ export function AuthButtonApp() {
     if (authData?.authUrl) {
       await authPoller.startAuth(authData.authUrl);
     }
-  };
-
-  // Handle view conversations
-  const handleViewConversations = () => {
-    sendPrompt("Show my X conversations");
   };
 
   // Render loading state
@@ -149,14 +144,7 @@ export function AuthButtonApp() {
           ✓
         </div>
         <h2 style={{ marginTop: 0, marginBottom: 8 }}>Connected to X</h2>
-        {username && (
-          <p className="text-muted" style={{ marginBottom: 16 }}>
-            Logged in as @{username}
-          </p>
-        )}
-        <Button onClick={handleViewConversations} size="lg" variant="primary">
-          View Conversations
-        </Button>
+        {username && <p className="text-muted">Logged in as @{username}</p>}
       </div>
     </div>
   );
