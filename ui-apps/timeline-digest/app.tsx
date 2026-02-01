@@ -5,7 +5,7 @@
  * with expandable cards for replying.
  */
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Avatar } from "@/components/avatar";
 import { Button } from "@/components/button";
 import {
@@ -31,7 +31,6 @@ interface TimelineTweet {
 
 interface DigestData {
   tweets: TimelineTweet[];
-  summary?: string;
   totalCount: number;
 }
 
@@ -41,30 +40,26 @@ export function TimelineDigestApp() {
   const [appState, setAppState] = useState<AppState>("loading");
   const [tweets, setTweets] = useState<TimelineTweet[]>([]);
   const [expandedTweetId, setExpandedTweetId] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errorMessage, _setErrorMessage] = useState<string | null>(null);
 
-  const { callTool, openLink, sendPrompt } = useMcpApp<DigestData | string>({
-    name: "ASSA Timeline Digest",
-    onData: (data) => {
-      if (typeof data === "string") {
-        // Error or message
-        setErrorMessage(data);
-        setAppState("error");
-        return;
-      }
+  const { initialData, callTool, openLink, sendPrompt } = useMcpApp<DigestData>(
+    {
+      name: "ASSA Timeline Digest",
+      version: "1.0.0",
+    }
+  );
 
-      if (data.tweets && data.tweets.length > 0) {
-        setTweets(data.tweets);
+  // Handle initial data from tool result
+  useEffect(() => {
+    if (initialData) {
+      if (initialData.tweets && initialData.tweets.length > 0) {
+        setTweets(initialData.tweets);
         setAppState("loaded");
       } else {
         setAppState("empty");
       }
-    },
-    onError: (error) => {
-      setErrorMessage(error.message);
-      setAppState("error");
-    },
-  });
+    }
+  }, [initialData]);
 
   // Convert TimelineTweet to ConversationItem for the card
   const toConversationItem = (tweet: TimelineTweet): ConversationItem => ({

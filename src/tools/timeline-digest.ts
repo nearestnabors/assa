@@ -459,20 +459,18 @@ export async function xTimelineDigest(): Promise<unknown> {
       timestamp: tweet.timestamp.toISOString(),
     }));
 
-    // Return structured data for UI
+    // Return data as JSON string for UI to parse
+    // The useMcpApp hook parses content[0].text as JSON
     return {
       content: [
         {
           type: "text",
-          text: `Found ${tweets.length} tweets from the past 24 hours.`,
+          text: JSON.stringify({
+            tweets: uiTweets,
+            totalCount: tweets.length,
+          }),
         },
       ],
-      _meta: {
-        uiData: {
-          tweets: uiTweets,
-          totalCount: tweets.length,
-        },
-      },
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
