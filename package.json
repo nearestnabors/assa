@@ -11,7 +11,7 @@
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build:ui": "rm -rf dist/ui && mkdir -p dist/ui && VITE_APP=auth-button vite build && VITE_APP=tweet-preview vite build && VITE_APP=conversation-list vite build",
+    "build:ui": "rm -rf dist/ui && mkdir -p dist/ui && VITE_APP=auth-button vite build && VITE_APP=tweet-preview vite build && VITE_APP=conversation-list vite build && VITE_APP=timeline-digest vite build",
     "build:server": "tsc",
     "build": "bun run build:ui && bun run build:server",
     "start": "node dist/index.js",

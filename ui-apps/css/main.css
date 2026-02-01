@@ -573,3 +573,91 @@ button:disabled {
 .gap-4 {
   gap: 16px;
 }
+
+/* === TWEET CHIP (Compact digest view) === */
+.tweet-chip {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-non-interactive);
+  cursor: pointer;
+  transition: all 0.2s ease-out;
+  align-items: flex-start;
+}
+
+.tweet-chip:hover {
+  border-color: var(--color-accent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tweet-chip .avatar {
+  width: 32px;
+  height: 32px;
+}
+
+.tweet-chip .avatar-placeholder {
+  font-size: var(--font-size-xs);
+}
+
+.tweet-chip .chip-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.tweet-chip .chip-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.tweet-chip .chip-author {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
+.tweet-chip .chip-time {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.tweet-chip .chip-text {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-normal);
+  margin: 0 0 8px 0;
+  word-wrap: break-word;
+}
+
+.tweet-chip .chip-stats {
+  display: flex;
+  gap: 12px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.tweet-chip .chip-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* === DIGEST HEADER === */
+.digest-header h2 {
+  margin: 0;
+  font-size: var(--font-size-lg);
+}
+
+/* === SPINNER === */
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}

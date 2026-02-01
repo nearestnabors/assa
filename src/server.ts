@@ -38,6 +38,7 @@ const UI_RESOURCES = {
   authButton: "ui://assa/auth-button.html",
   tweetPreview: "ui://assa/tweet-preview.html",
   conversationList: "ui://assa/conversation-list.html",
+  timelineDigest: "ui://assa/timeline-digest.html",
 };
 
 // Tool definitions for MCP with UI metadata
@@ -177,16 +178,20 @@ const TOOLS: Tool[] = [
   {
     name: "x_timeline_digest",
     description:
-      "Fetch and summarize your Twitter/X Following timeline from the past 24 hours. " +
+      "Fetch and display your Twitter/X Following timeline from the past 24 hours as an interactive UI. " +
       "IMPORTANT: This requires Chrome to be running with remote debugging enabled " +
       "(--remote-debugging-port=9222) and you must be logged into Twitter/X in that browser. " +
-      "Returns raw tweets for you to summarize based on user context and interests.",
+      "The UI shows clickable tweet cards that can be expanded to reply.",
     inputSchema: {
       type: "object",
       properties: {},
       required: [],
     },
-    // No UI for now - returns text for agent to summarize
+    _meta: {
+      ui: {
+        resourceUri: UI_RESOURCES.timelineDigest,
+      },
+    },
   },
   {
     name: "x_show_tweet",
@@ -278,6 +283,11 @@ export function createServer(): Server {
           name: "Conversation List UI",
           mimeType: RESOURCE_MIME_TYPE,
         },
+        {
+          uri: UI_RESOURCES.timelineDigest,
+          name: "Timeline Digest UI",
+          mimeType: RESOURCE_MIME_TYPE,
+        },
       ],
     };
   });
@@ -291,6 +301,7 @@ export function createServer(): Server {
       [UI_RESOURCES.authButton]: "auth-button.html",
       [UI_RESOURCES.tweetPreview]: "tweet-preview.html",
       [UI_RESOURCES.conversationList]: "conversation-list.html",
+      [UI_RESOURCES.timelineDigest]: "timeline-digest.html",
     };
 
     const filename = uriToFile[uri];

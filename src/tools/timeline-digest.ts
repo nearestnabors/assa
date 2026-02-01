@@ -127,7 +127,7 @@ async function navigateToFollowing(page: Page): Promise<void> {
 
     // Wait for tweets to load first (indicates page is ready)
     await page.waitForSelector('article[data-testid="tweet"]', {
-      timeout: 10000,
+      timeout: 10_000,
     });
 
     // The Following tab is a div[role="tab"] with "Following" text inside
@@ -203,6 +203,7 @@ async function selectRecentSort(page: Page): Promise<void> {
 /**
  * Extract tweet data from the current page
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Tweet extraction requires handling many edge cases
 async function extractVisibleTweets(page: Page): Promise<TimelineTweet[]> {
   const tweets: TimelineTweet[] = [];
 
@@ -389,7 +390,9 @@ async function scrollAndCollectTweets(page: Page): Promise<TimelineTweet[]> {
 
     // Only stop for old tweets AFTER minimum scrolls completed
     if (foundOldTweet && scrollAttempts >= minScrollAttempts) {
-      debugLog("Stopping scroll - found old tweet and completed minimum scrolls");
+      debugLog(
+        "Stopping scroll - found old tweet and completed minimum scrolls"
+      );
       break;
     }
 
@@ -424,65 +427,6 @@ async function scrollAndCollectTweets(page: Page): Promise<TimelineTweet[]> {
 }
 
 /**
- * Format tweets for return to agent
- * Includes tweet IDs so agent can offer to show full tweets with x_show_tweet
- */
-function formatTweetsForAgent(tweets: TimelineTweet[]): string {
-  if (tweets.length === 0) {
-    return "No tweets found in your Following timeline from the past 24 hours.";
-  }
-
-  const lines: string[] = [
-    `Found ${tweets.length} tweets from the past 24 hours in your Following timeline.`,
-    `(Tip: You can show any tweet as a rich card using x_show_tweet with its ID)\n`,
-  ];
-
-  for (const tweet of tweets) {
-    const timeAgo = formatTimeAgo(tweet.timestamp);
-    const engagement = `${tweet.likes} likes, ${tweet.retweets} RTs, ${tweet.replies} replies`;
-    let prefix = "";
-    if (tweet.isRetweet) {
-      prefix = "[RT] ";
-    } else if (tweet.isQuote) {
-      prefix = "[QT] ";
-    }
-
-    // Truncate long tweets for the digest
-    const maxTextLength = 200;
-    const truncatedText =
-      tweet.text.length > maxTextLength
-        ? `${tweet.text.substring(0, maxTextLength)}...`
-        : tweet.text;
-
-    lines.push("---");
-    lines.push(
-      `${prefix}@${tweet.authorUsername} (${tweet.authorDisplayName}) - ${timeAgo}`
-    );
-    lines.push(truncatedText);
-    lines.push(`Engagement: ${engagement}`);
-    lines.push(`Tweet ID: ${tweet.id}`);
-
-    if (tweet.quotedTweetText) {
-      lines.push(`> Quoted: "${tweet.quotedTweetText.substring(0, 100)}..."`);
-    }
-  }
-
-  return lines.join("\n");
-}
-
-function formatTimeAgo(date: Date): string {
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60_000);
-  const diffHours = Math.floor(diffMins / 60);
-
-  if (diffMins < 60) {
-    return `${diffMins}m ago`;
-  }
-  return `${diffHours}h ago`;
-}
-
-/**
  * Tool: x_timeline_digest
  * Fetches tweets from the Following timeline for the past 24 hours
  */
@@ -509,16 +453,26 @@ export async function xTimelineDigest(): Promise<unknown> {
       tweetCount: tweets.length,
     });
 
-    // Format for agent
-    const formattedOutput = formatTweetsForAgent(tweets);
+    // Convert tweets to UI format (Date -> ISO string)
+    const uiTweets = tweets.map((tweet) => ({
+      ...tweet,
+      timestamp: tweet.timestamp.toISOString(),
+    }));
 
+    // Return structured data for UI
     return {
       content: [
         {
           type: "text",
-          text: formattedOutput,
+          text: `Found ${tweets.length} tweets from the past 24 hours.`,
         },
       ],
+      _meta: {
+        uiData: {
+          tweets: uiTweets,
+          totalCount: tweets.length,
+        },
+      },
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
