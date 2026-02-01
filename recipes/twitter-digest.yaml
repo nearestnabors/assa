@@ -1,4 +1,3 @@
-version: 1.0.0
 title: Twitter Timeline Digest
 description: |
   Daily digest of your Twitter Following timeline from the past 24 hours.
@@ -20,19 +19,13 @@ instructions: |
   5. Keep the summary concise but comprehensive
 
   If there's an error connecting to Chrome, remind the user they need to
-  start Chrome with remote debugging enabled.
+  start Chrome with remote debugging enabled:
+  /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9222
 
 prompt: Show me a digest of my Twitter timeline from the past 24 hours
-
-extensions:
-  - assa
 
 activities:
   - Show my Twitter timeline digest
   - What's happening on Twitter today?
   - Summarize my Twitter feed
   - What did I miss on Twitter?
-
-author:
-  name: ASSA
-  contact: https://github.com/nearestnabors/assa
