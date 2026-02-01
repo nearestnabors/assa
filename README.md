@@ -75,10 +75,12 @@ goose configure
 Check my Twitter mentions from the last 24 hours
 ```
 
-### Get Daily Digest
+### Get Timeline Digest
 ```
-Give me a summary of my Twitter activity today
+Show me a digest of my Twitter timeline from the past 24 hours
 ```
+
+**Note:** Timeline digest requires Chrome running with remote debugging. See [Timeline Digest Setup](#timeline-digest-setup) below.
 
 ### Post a Tweet
 ```
@@ -99,6 +101,85 @@ Reply to @anthropic_devs saying I'll share slides after the talk
 | `x_dismiss_conversation` | Dismiss a conversation (reappears on new activity) |
 | `x_draft_tweet` | Create draft with preview |
 | `x_post_tweet` | Post after approval |
+| `x_timeline_digest` | Fetch and summarize your Following timeline (past 24h) |
+| `x_show_tweet` | Display a single tweet as a rich card with reply option |
+
+## Timeline Digest Setup
+
+The timeline digest feature scrapes your Twitter Following timeline using your existing browser session. This is free (no API costs) and uses your logged-in state.
+
+### Prerequisites
+
+1. **Google Chrome** installed
+2. **Logged into Twitter/X** in Chrome
+
+### Start Chrome with Remote Debugging
+
+Before using timeline digest, start Chrome with the remote debugging port:
+
+**Mac:**
+```bash
+/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9222
+```
+
+**Windows:**
+```bash
+"C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222
+```
+
+**Linux:**
+```bash
+google-chrome --remote-debugging-port=9222
+```
+
+Then make sure you're logged into Twitter/X in that browser window.
+
+### Schedule Daily Digests with Goose Recipes
+
+Want to get your timeline digest automatically? Use a Goose recipe!
+
+#### Option 1: Deep Link (One-Click Import)
+
+Click this link to import the recipe directly into Goose Desktop:
+
+```
+goose://recipe?url=https://raw.githubusercontent.com/nearestnabors/assa/main/recipes/twitter-digest.yaml
+```
+
+Or generate a deep link from the local file:
+```bash
+goose recipe deeplink recipes/twitter-digest.yaml
+```
+
+#### Option 2: YAML File (CLI)
+
+1. Copy the recipe file from `recipes/twitter-digest.yaml`
+
+2. Run it with Goose CLI:
+   ```bash
+   goose run --recipe recipes/twitter-digest.yaml
+   ```
+
+3. Or import it into Goose Desktop:
+   ```bash
+   goose recipe open recipes/twitter-digest.yaml
+   ```
+
+#### Scheduling the Recipe
+
+Once imported, you can schedule the recipe to run automatically:
+
+1. Open **Goose Desktop**
+2. Go to **Settings** > **Routines**
+3. Find "Twitter Timeline Digest"
+4. Set your preferred schedule (e.g., daily at 9 AM)
+
+**Cron schedule examples:**
+- `0 9 * * *` — 9 AM daily
+- `0 9 * * 1-5` — 9 AM weekdays only
+- `0 9,18 * * *` — 9 AM and 6 PM daily
+
+**Important:** Chrome must be running with `--remote-debugging-port=9222` for scheduled runs to work.
 
 ## Development
 
@@ -240,11 +321,16 @@ ASSA MCP Server
 
 ## Roadmap
 
+### Completed
+
+- [x] Migrate to React components
+- [x] Custom CSS design system (9 color palettes, semantic tokens)
+- [x] Timeline digest via Playwright browser automation
+- [x] Goose recipe for scheduled digests
+
 ### Next Steps
 
-- [ ] Migrate to React components
 - [ ] Make Authorize button more attractive
-- [ ] Get a proper style system implemented like ShadCN
 - [ ] Make the "reply UI" smaller:
   - [ ] Add small "dismiss" and "reply" icons in the lower left corner of each card
   - [ ] Clicking "reply" replaces icons with input area and reply button
@@ -252,11 +338,10 @@ ASSA MCP Server
 - [ ] If a Tweet is a reply, show the original tweet as a stylized quote above the comment
 - [ ] If a tweet quotes another tweet, show the quoted tweet below the comment
 
-### Phase 2
+### Future
 
 - [ ] Add `X.GetMutedUsers` to Arcade to filter muted accounts from conversations
 - [ ] Add media expansion to Arcade to show images in tweets
-- [ ] Browser automation for "Following" timeline digest (AgentQL/Firecrawl)
 - [ ] VIP accounts feature (track specific users)
 
 ### Known Limitations
