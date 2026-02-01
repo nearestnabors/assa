@@ -115,8 +115,8 @@ describe("Goose Recipes", () => {
       expect(hasInstructions || hasPrompt).toBe(true);
     });
 
-    test("instructions mention x_conversations tool", () => {
-      expect(recipe.instructions).toContain("x_conversations");
+    test("instructions mention x_list_conversations tool", () => {
+      expect(recipe.instructions).toContain("x_list_conversations");
     });
 
     test("has activities array", () => {

@@ -102,15 +102,16 @@ Reply to @anthropic_devs saying I'll share slides after the talk
 
 ## Tools
 
-| Tool                     | Description                                             |
-| ------------------------ | ------------------------------------------------------- |
-| `x_auth_status`          | Check authentication, show connect button if needed     |
-| `x_conversations`        | Show unreplied mentions as a conversation inbox         |
-| `x_dismiss_conversation` | Dismiss a conversation (reappears on new activity)      |
-| `x_draft_tweet`          | Create draft with preview                               |
-| `x_post_tweet`           | Post after approval                                     |
-| `x_timeline_digest`      | Fetch and summarize your Following timeline (past 24h)  |
-| `x_show_tweet`           | Display a single tweet as a rich card with reply option |
+| Tool                     | Description                                                   |
+| ------------------------ | ------------------------------------------------------------- |
+| `x_auth_status`          | Check authentication, show connect button if needed           |
+| `x_conversations`        | Show unreplied mentions as a rich UI conversation inbox       |
+| `x_list_conversations`   | List unreplied mentions as text (for scheduled recipes)       |
+| `x_dismiss_conversation` | Dismiss a conversation (reappears on new activity)            |
+| `x_draft_tweet`          | Create draft with preview                                     |
+| `x_post_tweet`           | Post after approval                                           |
+| `x_timeline_digest`      | Fetch and summarize your Following timeline (past 24h)        |
+| `x_show_tweet`           | Display a single tweet as a rich card with reply option       |
 
 ## Timeline Digest Setup
 
