@@ -11,16 +11,31 @@ instructions: |
   Use the x_timeline_digest tool to fetch posts from the user's Following
   timeline from the past 24 hours.
 
-  When summarizing:
-  1. SKIP ads, promotional content, marketing-speak, hate speech, and spam
-  2. Focus on interesting conversations, news, insights, and personal updates
-  3. Group related posts by topic or theme when it makes sense
-  4. ALWAYS include markdown links to each post you reference
-     Format: [@username](https://x.com/username/status/post_id)
-  5. Keep the summary concise but comprehensive
+  Your job is to surface interesting content from HUMANS—their thoughts,
+  conversations, and insights. Corporate accounts and promotional content
+  should be ignored, even if the user follows them.
 
-  If there's an error connecting to Chrome, remind the user they need to
-  start Chrome with remote debugging enabled:
+  SKIP:
+  - Corporate/brand accounts (media outlets, sports networks, news orgs, companies)
+  - Accounts with patterns like "News", "Sports", "Official", or brand names
+  - Marketing language ("Check out", "Don't miss", "Available now", "Link in bio")
+  - Pure link dumps without commentary
+  - Hate speech and spam
+
+  PRIORITIZE:
+  - Individual humans sharing original thoughts or insights
+  - Genuine conversations and replies
+  - Personal updates and experiences
+
+  Think: "Would I mention this to a friend?" not "Is this technically from
+  someone they follow?"
+
+  When summarizing:
+  1. Group related posts by topic when it makes sense
+  2. ALWAYS include markdown links: [@username](https://x.com/username/status/post_id)
+  3. Keep it concise but comprehensive
+
+  If there's an error connecting to Chrome, remind the user to start Chrome with:
   /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9222
 
 prompt: Show me a digest of my X timeline from the past 24 hours
