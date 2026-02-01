@@ -1,24 +1,27 @@
 import { resolve } from "node:path";
+import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import { viteSingleFile } from "vite-plugin-singlefile";
 
-// Get the input file from environment variable
-const inputFile = process.env.VITE_INPUT;
+// Get the app name from environment variable (e.g., "auth-button", "conversation-list")
+const appName = process.env.VITE_APP;
 
-if (!inputFile) {
-  throw new Error("VITE_INPUT environment variable is required");
+if (!appName) {
+  throw new Error(
+    "VITE_APP environment variable is required (e.g., 'auth-button')"
+  );
 }
 
-// Extract name without extension for output directory
-const baseName = inputFile.replace(".html", "");
-
 export default defineConfig({
-  plugins: [viteSingleFile()],
+  root: resolve(__dirname, `ui-apps/${appName}`),
+  plugins: [react(), viteSingleFile()],
   build: {
-    outDir: `dist/ui/${baseName}`,
+    outDir: resolve(__dirname, `dist/ui/${appName}`),
     emptyDirOnStart: true,
-    rollupOptions: {
-      input: resolve(__dirname, `ui-apps/${inputFile}`),
+  },
+  resolve: {
+    alias: {
+      "@": resolve(__dirname, "./ui-apps"),
     },
   },
 });
