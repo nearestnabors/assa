@@ -1,0 +1,70 @@
+/**
+ * Typography System
+ * Font families and typography tokens for consistent text styling
+ */
+
+/* Import Google Fonts - CSP configured in server.ts resourceDomains */
+@import url("https://fonts.googleapis.com/css2?family=Oxygen:wght@300;400;700&family=Merriweather:wght@300;400;700;900&display=swap");
+
+:root {
+  /* === FONT FAMILY TOKENS === */
+  /* Use these tokens throughout your UI for consistency */
+
+  /* Base font stacks with fallbacks */
+  --font-family-sans:
+    "Oxygen", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial,
+    sans-serif;
+  --font-family-serif: "Merriweather", Georgia, "Times New Roman", Times, serif;
+  --font-family-mono:
+    "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New",
+    monospace;
+
+  /* === SEMANTIC FONT TOKENS === */
+  /* Use these for different content types */
+
+  /* Primary text fonts */
+  --font-text-primary: var(--font-family-sans); /* Body text, UI elements */
+  --font-text-secondary: var(
+    --font-family-serif
+  ); /* Alternative text styling */
+
+  /* Heading fonts */
+  --font-heading-primary: var(--font-family-serif); /* Main headings (h1, h2) */
+  --font-heading-secondary: var(
+    --font-family-serif
+  ); /* Sub-headings (h3, h4, h5, h6) */
+
+  /* Specialized fonts */
+  --font-code: var(--font-family-mono); /* Code, API keys, technical content */
+  --font-ui: var(--font-family-sans); /* Buttons, form labels, UI elements */
+
+  /* === FONT WEIGHT TOKENS === */
+  /* Oxygen weights: 300 (Light), 400 (Regular), 700 (Bold) */
+  /* Merriweather weights: 300 (Light), 400 (Regular), 700 (Bold), 900 (Black) */
+
+  --font-weight-light: 300;
+  --font-weight-regular: 400;
+  --font-weight-semibold: 600; /* Fallback for fonts without 600 */
+  --font-weight-bold: 700;
+  --font-weight-black: 900; /* Available for Merriweather */
+
+  /* === FONT SIZE SCALE === */
+  /* Consistent type scale for hierarchy */
+
+  --font-size-xs: 12px; /* Small text, captions */
+  --font-size-sm: 14px; /* Body text, form inputs */
+  --font-size-base: 16px; /* Default size, buttons */
+  --font-size-lg: 18px; /* Emphasized text */
+  --font-size-xl: 20px; /* Small headings */
+  --font-size-2xl: 24px; /* Medium headings */
+  --font-size-3xl: 28px; /* Large headings */
+  --font-size-4xl: 32px; /* Hero headings */
+
+  /* === LINE HEIGHT TOKENS === */
+  /* For different content types */
+
+  --line-height-tight: 1.25; /* Headings */
+  --line-height-normal: 1.5; /* Body text */
+  --line-height-relaxed: 1.6; /* Long-form reading */
+  --line-height-loose: 1.8; /* Very comfortable reading */
+}

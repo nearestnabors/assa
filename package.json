@@ -11,7 +11,7 @@
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build:ui": "rm -rf dist/ui && mkdir -p dist/ui && VITE_INPUT=auth-button.html vite build && VITE_INPUT=tweet-preview.html vite build && VITE_INPUT=conversation-list.html vite build",
+    "build:ui": "rm -rf dist/ui && mkdir -p dist/ui && VITE_APP=auth-button vite build && VITE_APP=tweet-preview vite build && VITE_APP=conversation-list vite build",
     "build:server": "tsc",
     "build": "bun run build:ui && bun run build:server",
     "start": "node dist/index.js",
@@ -27,12 +27,17 @@
     "@modelcontextprotocol/ext-apps": "^1.0.1",
     "@modelcontextprotocol/sdk": "^1.0.0",
     "dotenv": "^17.2.3",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.13",
     "@types/bun": "^1.2.0",
     "@types/node": "^20.11.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3",
     "ultracite": "^7.1.1",

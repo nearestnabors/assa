@@ -316,8 +316,7 @@ async function fetchConversations(
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
 
-    // Set avatar URLs to unavatar.io (external service)
-    // CSP configured in server.ts via resourceDomains - UI defers loading to allow CSP setup
+    // Set avatar URLs to unavatar.io - CSP configured in server.ts resourceDomains
     for (const conv of conversations) {
       conv.author_avatar_url = `https://unavatar.io/twitter/${conv.author_username}`;
     }

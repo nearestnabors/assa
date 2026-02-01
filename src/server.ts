@@ -185,24 +185,16 @@ const toolHandlers: Record<string, ToolHandler> = {
   x_dismiss_conversation: xDismissConversation,
 };
 
-// Load bundled UI HTML from dist/ui/{name}/ui-apps/{name}.html
+// Load bundled UI HTML from dist/ui/{name}/index.html
 async function loadUIResource(filename: string): Promise<string> {
   const baseName = filename.replace(".html", "");
-  // Try from dist/ui/{name}/ui-apps/{name}.html (vite output location)
-  const filePath = join(__dirname, "ui", baseName, "ui-apps", filename);
+  // Try from dist/ui/{name}/index.html (vite output location)
+  const filePath = join(__dirname, "ui", baseName, "index.html");
   try {
     return await readFile(filePath, "utf-8");
   } catch {
-    // Fallback: try from project root dist/ui/{name}/ui-apps/{name}.html (for development)
-    const altPath = join(
-      __dirname,
-      "..",
-      "dist",
-      "ui",
-      baseName,
-      "ui-apps",
-      filename
-    );
+    // Fallback: try from project root dist/ui/{name}/index.html (for development)
+    const altPath = join(__dirname, "..", "dist", "ui", baseName, "index.html");
     return await readFile(altPath, "utf-8");
   }
 }
@@ -267,35 +259,30 @@ export function createServer(): Server {
 
     const html = await loadUIResource(filename);
 
-    // Base resource content
-    const resourceContent: {
-      uri: string;
-      mimeType: string;
-      text: string;
-      _meta?: { ui: { csp: { resourceDomains: string[] } } };
-    } = {
-      uri,
-      mimeType: RESOURCE_MIME_TYPE,
-      text: html,
-    };
-
-    // Add CSP for UIs that load avatars from unavatar.io
-    // auth-button also renders conversations after auth completes
-    if (
-      uri === UI_RESOURCES.conversationList ||
-      uri === UI_RESOURCES.authButton
-    ) {
-      resourceContent._meta = {
-        ui: {
-          csp: {
-            resourceDomains: ["https://unavatar.io"],
-          },
-        },
-      };
-    }
+    // CSP resource domains - allow external fonts and avatar images
+    const resourceDomains = [
+      // Google Fonts
+      "https://fonts.googleapis.com",
+      "https://fonts.gstatic.com",
+      // Avatar images
+      "https://unavatar.io",
+    ];
 
     return {
-      contents: [resourceContent],
+      contents: [
+        {
+          uri,
+          mimeType: RESOURCE_MIME_TYPE,
+          text: html,
+          _meta: {
+            ui: {
+              csp: {
+                resourceDomains,
+              },
+            },
+          },
+        },
+      ],
     };
   });
 

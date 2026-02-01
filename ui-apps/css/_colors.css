@@ -1,0 +1,184 @@
+/**
+ * Color Design Tokens
+ * Complete color palette with semantic tokens for consistent UI
+ */
+
+:root {
+  /* Jean - Primary Blues/Grays */
+  --jean-25: #758bb9;
+  --jean-50: #677fb0;
+  --jean-100: #5a72a7;
+  --jean-200: #536897;
+  --jean-300: #4c5e87;
+  --jean-400: #445477;
+  --jean-500: #3d4a67;
+  --jean-600: #354058;
+  --jean-700: #2d3649;
+  --jean-800: #252c3a;
+  --jean-900: #1c212c;
+  --jean-950: #13161e;
+
+  /* Sage - Natural Greens */
+  --sage-25: #f4f5ec;
+  --sage-50: #e8ecdc;
+  --sage-100: #d4e3cc;
+  --sage-200: #ccdabc;
+  --sage-300: #c0d0ad;
+  --sage-400: #b4c59f;
+  --sage-500: #a8b890;
+  --sage-600: #9cb082;
+  --sage-700: #90a475;
+  --sage-800: #859967;
+  --sage-900: #78885f;
+  --sage-950: #6b7856;
+
+  /* Mint - Bright Greens */
+  --mint-25: #fafffb;
+  --mint-50: #d3fedc;
+  --mint-100: #a5f0be;
+  --mint-200: #88f6a2;
+  --mint-300: #6af086;
+  --mint-400: #4ae76d;
+  --mint-500: #29e14f;
+  --mint-600: #1ec43e;
+  --mint-700: #1a9f32;
+  --mint-800: #167c27;
+  --mint-900: #11591c;
+  --mint-950: #0b3711;
+
+  /* Cyber - Electric Yellows */
+  --cyber-25: #feffeb;
+  --cyber-50: #fcffc0;
+  --cyber-100: #faff99;
+  --cyber-200: #f8ff73;
+  --cyber-300: #f5ff4d;
+  --cyber-400: #f2ff27;
+  --cyber-500: #eeff00;
+  --cyber-600: #cdd801;
+  --cyber-700: #abb102;
+  --cyber-800: #888a03;
+  --cyber-900: #646303;
+  --cyber-950: #3e3d02;
+
+  /* Wine - Deep Purples */
+  --wine-25: #b75780;
+  --wine-50: #ad4c75;
+  --wine-100: #9d4668;
+  --wine-200: #8d4161;
+  --wine-300: #7d3857;
+  --wine-400: #6e354d;
+  --wine-500: #5f2f43;
+  --wine-600: #502839;
+  --wine-700: #41212f;
+  --wine-800: #321b25;
+  --wine-900: #24131a;
+  --wine-950: #160c10;
+
+  /* Raspberry - Bright Reds */
+  --raspberry-25: #fde8f0;
+  --raspberry-50: #f9c5d9;
+  --raspberry-100: #f5a3c2;
+  --raspberry-200: #f082ab;
+  --raspberry-300: #ea6294;
+  --raspberry-400: #e4427d;
+  --raspberry-500: #dd2266;
+  --raspberry-600: #ba1f59;
+  --raspberry-700: #981b4c;
+  --raspberry-800: #76173d;
+  --raspberry-900: #551220;
+  --raspberry-950: #340c10;
+
+  /* Amethyst - Mid-tone Purples */
+  --amethyst-25: #fcf8fd;
+  --amethyst-50: #edddf3;
+  --amethyst-100: #dec1e9;
+  --amethyst-200: #cda5de;
+  --amethyst-300: #bd8ad3;
+  --amethyst-400: #a86fc7;
+  --amethyst-500: #9955bb;
+  --amethyst-600: #8445a5;
+  --amethyst-700: #6d3c88;
+  --amethyst-800: #57326c;
+  --amethyst-900: #412750;
+  --amethyst-950: #2c1b36;
+
+  /* Tangerine - Warm Oranges */
+  --tangerine-25: #fffcfa;
+  --tangerine-50: #fee5d4;
+  --tangerine-100: #fcceaf;
+  --tangerine-200: #f8b788;
+  --tangerine-300: #f3a169;
+  --tangerine-400: #ed8c48;
+  --tangerine-500: #e77327;
+  --tangerine-600: #cd5f1a;
+  --tangerine-700: #ab4d17;
+  --tangerine-800: #843c14;
+  --tangerine-900: #6d2c10;
+  --tangerine-950: #3e1c0b;
+
+  /* Sand - Warm Neutrals */
+  --sand-25: #f5f4ec;
+  --sand-50: #ece4dc;
+  --sand-100: #e3dfcc;
+  --sand-200: #dad38c;
+  --sand-300: #d0c7ad;
+  --sand-400: #c5bc9f;
+  --sand-500: #bbb090;
+  --sand-600: #b0a482;
+  --sand-700: #a49875;
+  --sand-800: #998c67;
+  --sand-900: #8b7d5f;
+  --sand-950: #786f56;
+
+  /* === SEMANTIC COLOR TOKENS === */
+  /* Use these tokens throughout your UI for consistency */
+
+  /* Text Colors */
+  --color-text-primary: var(--sage-25); /* Main text color */
+  --color-text-muted: var(--sage-100); /* Muted/secondary text */
+
+  /* Background Colors */
+  --color-bg-primary: var(--jean-900); /* Main background */
+  --color-bg-secondary: var(--cyber-900); /* Secondary background */
+  --color-bg-neutral-light: var(--sage-100); /* Light neutral background */
+  --color-bg-neutral-warm: var(--sand-100); /* Warm neutral background */
+
+  /* Link Colors */
+  --color-link: var(--mint-400);
+  --color-link-hover: var(--color-accent);
+  --color-link-active: var(--color-accent);
+  --color-link-visited: var(--amethyst-300);
+
+  /* State Colors */
+  --color-success: var(--mint-900); /* Success/positive actions */
+  --color-success-light: var(--mint-100); /* Light success backgrounds */
+  --color-success-bg: var(--mint-50); /* Success background */
+
+  --color-error: var(--raspberry-500); /* Error/danger states */
+  --color-error-light: var(--raspberry-100); /* Light error backgrounds */
+  --color-error-bg: var(--raspberry-50); /* Error background */
+
+  --color-warning: var(--tangerine-400); /* Warning/caution states */
+  --color-warning-text: var(--tangerine-700); /* Warning text color */
+  --color-warning-bg: var(--tangerine-50); /* Warning background */
+
+  /* Brand & Accent Colors */
+  --color-brand: var(--cyber-500); /* Primary brand color */
+  --color-brand-light: var(--cyber-100); /* Light brand background */
+  --color-accent: var(--amethyst-200); /* High attention/accent */
+  --color-accent-light: var(--amethyst-50); /* Light accent background */
+
+  /* Interactive Colors */
+  --color-primary: var(--jean-500); /* Primary interactive elements */
+  --color-primary-hover: var(--jean-600); /* Primary hover state */
+  --color-primary-light: var(--jean-100); /* Light primary background */
+
+  /* Border Colors */
+  --color-border: var(--sage-200); /* Light borders */
+  --color-border-gradient: linear-gradient(
+      to right,
+      var(--color-accent),
+      var(--color-brand)
+    )
+    1;
+}
