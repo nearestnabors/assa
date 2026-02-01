@@ -1,6 +1,6 @@
 # ASSA: Anti-Social Social Agent
 
-An MCP server that provides Twitter integration with rich UI components for [Goose](https://github.com/block/goose) and other MCP-compatible AI agents.
+An MCP server that provides X (formerly Twitter) integration with rich UI components for [Goose](https://github.com/block/goose) and other MCP-compatible AI agents.
 
 ## What is ASSA?
 
@@ -8,13 +8,13 @@ Social media companies weaponize interfaces against humans (infinite scroll, not
 
 ASSA reclaims the social web by:
 
-- **Daily Digest**: Know what happened on Twitter without opening the app
+- **Daily Digest**: Know what happened on X without opening the app
 - **Post with Approval**: Agent drafts, you review a rich preview, then approve
 
 ## Features
 
 - 🔐 **OAuth via Arcade**: Secure authentication without handling tokens yourself
-- 📊 **Rich UI Cards**: Mentions and DMs displayed with avatars, text, engagement metrics
+- 📊 **Rich UI Cards**: Mentions displayed with avatars, text, engagement metrics
 - ✍️ **Tweet Previews**: See exactly what will post, with character count
 - 🔁 **Human-in-the-Loop**: Nothing posts without your explicit approval
 
@@ -74,16 +74,16 @@ goose configure
 
 ## Usage
 
-### Check Twitter Activity
+### Check X Activity
 
 ```
-Check my Twitter mentions from the last 24 hours
+Check my X mentions from the last 24 hours
 ```
 
 ### Get Timeline Digest
 
 ```
-Show me a digest of my Twitter timeline from the past 24 hours
+Show me a digest of my X timeline from the past 24 hours
 ```
 
 **Note:** Timeline digest requires Chrome running with remote debugging. See [Timeline Digest Setup](#timeline-digest-setup) below.
@@ -114,12 +114,12 @@ Reply to @anthropic_devs saying I'll share slides after the talk
 
 ## Timeline Digest Setup
 
-The timeline digest feature accesses your X "Following" timeline using your existing browser session and Playwright. This is free (no API costs) and uses your logged-in state. (An API would be more robust, but X chooses to only make timeline API functionality available to industrial developers who can afford extortionate fees. So here we are, as hobbyists.)
+The timeline digest feature accesses your "Following" timeline using your existing browser session and Playwright. This is free (no API costs) and uses your logged-in state. (An API would be more robust, but X only makes timeline API functionality available to industrial developers who can afford extortionate fees. So here we are, as hobbyists.)
 
 ### Prerequisites
 
 1. **Google Chrome** installed
-2. **Logged into Twitter/X** in Chrome
+2. **Logged into X** in Chrome
 
 ### Start Chrome with Remote Debugging
 
@@ -143,7 +143,7 @@ Before using timeline digest, start Chrome with the remote debugging port:
 google-chrome --remote-debugging-port=9222
 ```
 
-Then make sure you're logged into Twitter/X in that browser window. (I keep one open and minimized on startup.)
+Then make sure you're logged into X in that browser window. (I keep one open and minimized on startup.)
 
 ### Goose Recipes
 
@@ -152,7 +152,7 @@ ASSA includes two recipes for scheduled automation:
 | Recipe                 | Description                                                                     |
 | ---------------------- | ------------------------------------------------------------------------------- |
 | `x-news-digest.yaml`   | Daily digest of your Following timeline (requires Chrome with remote debugging) |
-| `x-conversations.yaml` | Check and respond to mentions/conversations                                     |
+| `x-conversations.yaml` | Check and respond to X mentions/conversations                                   |
 
 #### Import a Recipe
 
@@ -327,7 +327,7 @@ ASSA MCP Server
        │
        │ OAuth + API
        ▼
-   Twitter
+      X
 ```
 
 ## Roadmap
@@ -367,7 +367,7 @@ Built for [MCP Connect 2026](https://mcpconnect.dev) by RL.
 Uses:
 
 - [Model Context Protocol](https://modelcontextprotocol.io)
-- [MCP-UI](https://mcpui.dev)
+- [MCP Apps](https://github.com/anthropics/mcp-apps)
 - [Goose](https://github.com/block/goose)
 - [Arcade.dev](https://arcade.dev)
 
