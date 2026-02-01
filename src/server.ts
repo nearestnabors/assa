@@ -38,7 +38,6 @@ const UI_RESOURCES = {
   authButton: "ui://assa/auth-button.html",
   tweetPreview: "ui://assa/tweet-preview.html",
   conversationList: "ui://assa/conversation-list.html",
-  timelineDigest: "ui://assa/timeline-digest.html",
 };
 
 // Tool definitions for MCP with UI metadata
@@ -279,11 +278,6 @@ export function createServer(): Server {
           name: "Conversation List UI",
           mimeType: RESOURCE_MIME_TYPE,
         },
-        {
-          uri: UI_RESOURCES.timelineDigest,
-          name: "Timeline Digest UI",
-          mimeType: RESOURCE_MIME_TYPE,
-        },
       ],
     };
   });
@@ -297,7 +291,6 @@ export function createServer(): Server {
       [UI_RESOURCES.authButton]: "auth-button.html",
       [UI_RESOURCES.tweetPreview]: "tweet-preview.html",
       [UI_RESOURCES.conversationList]: "conversation-list.html",
-      [UI_RESOURCES.timelineDigest]: "timeline-digest.html",
     };
 
     const filename = uriToFile[uri];
