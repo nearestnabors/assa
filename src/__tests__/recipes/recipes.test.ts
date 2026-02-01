@@ -84,7 +84,7 @@ describe("Goose Recipes", () => {
     test("instructions include content filtering rules", () => {
       const instructions = recipe.instructions?.toLowerCase() || "";
       expect(instructions).toContain("skip");
-      expect(instructions).toContain("ads");
+      expect(instructions).toContain("marketing");
     });
 
     test("has activities array", () => {

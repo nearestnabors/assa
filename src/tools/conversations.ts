@@ -200,22 +200,7 @@ async function fetchConversations(
         : null,
     });
 
-    // 3. Build a set of tweet IDs that the user has replied to
-    const repliedToIds = new Set<string>();
-    for (const tweet of userTweets) {
-      // Check if this tweet is a reply to another tweet
-      const replyRef = tweet.referenced_tweets?.find(
-        (ref) => ref.type === "replied_to"
-      );
-      if (replyRef) {
-        repliedToIds.add(replyRef.id);
-        debugLog(`Found reply: ${tweet.id} replied to ${replyRef.id}`);
-      }
-    }
-    console.error(`[ASSA] User has replied to ${repliedToIds.size} tweets`);
-    debugLog("Replied to IDs", Array.from(repliedToIds));
-
-    // 4. Build user lookup map for display names
+    // 3. Build user lookup map for display names (needed for heuristic matching)
     const userMap = new Map<
       string,
       { username: string; name: string; avatar?: string }
@@ -227,6 +212,89 @@ async function fetchConversations(
         avatar: user.profile_image_url,
       });
     }
+
+    // 4. Build a set of tweet IDs that the user has replied to
+    const repliedToIds = new Set<string>();
+
+    // First, try using referenced_tweets if available (proper API response)
+    for (const tweet of userTweets) {
+      const replyRef = tweet.referenced_tweets?.find(
+        (ref) => ref.type === "replied_to"
+      );
+      if (replyRef) {
+        repliedToIds.add(replyRef.id);
+        debugLog(`Found reply via API: ${tweet.id} replied to ${replyRef.id}`);
+      }
+    }
+
+    // Heuristic fallback: Arcade doesn't return referenced_tweets, so we use text matching
+    // If user's tweet starts with @someone and was posted after that person's mention, it's likely a reply
+    if (repliedToIds.size === 0 && userTweets.length > 0) {
+      debugLog("Using heuristic reply detection (referenced_tweets not available)");
+
+      // Build a map of mentioner usernames to their mentions
+      // Use userMap to get username from author_id since author_username may not be populated
+      const mentionsByAuthor = new Map<string, Tweet[]>();
+      for (const mention of mentions) {
+        // Get username from includes.users lookup, fallback to inline field
+        const authorInfo = userMap.get(mention.author_id || "");
+        const authorUsername = (
+          authorInfo?.username ||
+          mention.author_username ||
+          ""
+        ).toLowerCase();
+
+        if (authorUsername) {
+          const existing = mentionsByAuthor.get(authorUsername) || [];
+          existing.push(mention);
+          mentionsByAuthor.set(authorUsername, existing);
+        }
+      }
+
+      debugLog("Mentions by author", {
+        authors: Array.from(mentionsByAuthor.keys()),
+      });
+
+      // Check each user tweet to see if it looks like a reply
+      for (const tweet of userTweets) {
+        // Extract @mentions from the start of the tweet
+        const mentionMatch = tweet.text.match(/^(@\w+\s*)+/);
+        if (!mentionMatch) continue;
+
+        // Get all usernames mentioned at the start
+        const mentionedUsernames = mentionMatch[0]
+          .toLowerCase()
+          .match(/@(\w+)/g)
+          ?.map((m) => m.slice(1)); // Remove @ prefix
+
+        if (!mentionedUsernames) continue;
+
+        const userTweetTime = timestampFromSnowflake(tweet.id);
+        if (!userTweetTime) continue;
+
+        // Check if any of the mentioned users have mentions to us that are older
+        for (const mentionedUser of mentionedUsernames) {
+          const theirMentions = mentionsByAuthor.get(mentionedUser);
+          if (!theirMentions) continue;
+
+          for (const theirMention of theirMentions) {
+            const mentionTime = timestampFromSnowflake(theirMention.id);
+            if (!mentionTime) continue;
+
+            // If our tweet is newer than their mention, we probably replied to it
+            if (userTweetTime > mentionTime) {
+              repliedToIds.add(theirMention.id);
+              debugLog(
+                `Heuristic match: user tweet ${tweet.id} (@${mentionedUser}) is likely a reply to ${theirMention.id}`
+              );
+            }
+          }
+        }
+      }
+    }
+
+    console.error(`[ASSA] User has replied to ${repliedToIds.size} tweets`);
+    debugLog("Replied to IDs", Array.from(repliedToIds));
 
     // 5. Filter mentions to only actionable conversations
     const conversations: ConversationItem[] = [];
