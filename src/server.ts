@@ -23,11 +23,7 @@ import {
 
 // X tools
 import { xAuthStatus } from "./tools/auth-status.js";
-import {
-  xConversations,
-  xGetConversations,
-  xListConversations,
-} from "./tools/conversations.js";
+import { xConversations, xGetConversations } from "./tools/conversations.js";
 import { xDismissConversation } from "./tools/dismiss-conversation.js";
 import { xDraftTweet } from "./tools/draft-tweet.js";
 import { xPostTweet } from "./tools/post-tweet.js";
@@ -217,19 +213,6 @@ const TOOLS: Tool[] = [
       },
     },
   },
-  {
-    name: "x_list_conversations",
-    description:
-      "List X conversations awaiting your reply as formatted text. " +
-      "Use this in scheduled recipes or contexts where UI rendering is not available. " +
-      "Returns conversations with links for easy access.",
-    inputSchema: {
-      type: "object",
-      properties: {},
-      required: [],
-    },
-    // No UI - returns text for recipes and scheduled tasks
-  },
 ];
 
 // Tool handler dispatch
@@ -240,7 +223,6 @@ const toolHandlers: Record<string, ToolHandler> = {
   x_post_tweet: xPostTweet,
   x_conversations: xConversations,
   x_get_conversations: xGetConversations, // UI-only, returns full data
-  x_list_conversations: xListConversations, // Text-only, for recipes
   x_dismiss_conversation: xDismissConversation,
   x_show_tweet: xShowTweet,
   x_timeline_digest: xTimelineDigest,

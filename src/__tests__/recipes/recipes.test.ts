@@ -93,38 +93,6 @@ describe("Goose Recipes", () => {
     });
   });
 
-  describe("x-conversations.yaml", () => {
-    const recipe = parseRecipe("x-conversations.yaml");
-
-    test("has required title field", () => {
-      expect(recipe.title).toBeDefined();
-      expect(typeof recipe.title).toBe("string");
-      expect(recipe.title!.length).toBeGreaterThan(0);
-    });
-
-    test("has required description field", () => {
-      expect(recipe.description).toBeDefined();
-      expect(typeof recipe.description).toBe("string");
-      expect(recipe.description!.length).toBeGreaterThan(0);
-    });
-
-    test("has instructions or prompt", () => {
-      const hasInstructions =
-        recipe.instructions && recipe.instructions.length > 0;
-      const hasPrompt = recipe.prompt && recipe.prompt.length > 0;
-      expect(hasInstructions || hasPrompt).toBe(true);
-    });
-
-    test("instructions mention x_list_conversations tool", () => {
-      expect(recipe.instructions).toContain("x_list_conversations");
-    });
-
-    test("has activities array", () => {
-      expect(Array.isArray(recipe.activities)).toBe(true);
-      expect(recipe.activities!.length).toBeGreaterThan(0);
-    });
-  });
-
   // Generic validation for all recipe files
   describe("all recipes", () => {
     for (const filename of recipeFiles) {

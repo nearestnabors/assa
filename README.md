@@ -102,16 +102,15 @@ Reply to @anthropic_devs saying I'll share slides after the talk
 
 ## Tools
 
-| Tool                     | Description                                                   |
-| ------------------------ | ------------------------------------------------------------- |
-| `x_auth_status`          | Check authentication, show connect button if needed           |
-| `x_conversations`        | Show unreplied mentions as a rich UI conversation inbox       |
-| `x_list_conversations`   | List unreplied mentions as text (for scheduled recipes)       |
-| `x_dismiss_conversation` | Dismiss a conversation (reappears on new activity)            |
-| `x_draft_tweet`          | Create draft with preview                                     |
-| `x_post_tweet`           | Post after approval                                           |
-| `x_timeline_digest`      | Fetch and summarize your Following timeline (past 24h)        |
-| `x_show_tweet`           | Display a single tweet as a rich card with reply option       |
+| Tool                     | Description                                             |
+| ------------------------ | ------------------------------------------------------- |
+| `x_auth_status`          | Check authentication, show connect button if needed     |
+| `x_conversations`        | Show unreplied mentions as a conversation inbox         |
+| `x_dismiss_conversation` | Dismiss a conversation (reappears on new activity)      |
+| `x_draft_tweet`          | Create draft with preview                               |
+| `x_post_tweet`           | Post after approval                                     |
+| `x_timeline_digest`      | Fetch and summarize your Following timeline (past 24h)  |
+| `x_show_tweet`           | Display a single tweet as a rich card with reply option |
 
 ## Timeline Digest Setup
 
@@ -146,52 +145,46 @@ google-chrome --remote-debugging-port=9222
 
 Then make sure you're logged into X in that browser window. (I keep one open and minimized on startup.)
 
-### Goose Recipes
+### Goose Recipe
 
-ASSA includes two recipes for scheduled automation:
+ASSA includes a recipe for scheduled timeline digests:
 
-| Recipe                 | Description                                                                     |
-| ---------------------- | ------------------------------------------------------------------------------- |
-| `x-news-digest.yaml`   | Daily digest of your Following timeline (requires Chrome with remote debugging) |
-| `x-conversations.yaml` | Check and respond to X mentions/conversations                                   |
+| Recipe               | Description                                                                     |
+| -------------------- | ------------------------------------------------------------------------------- |
+| `x-news-digest.yaml` | Daily digest of your Following timeline (requires Chrome with remote debugging) |
 
-#### Import a Recipe
+#### Import the Recipe
 
-**Option 1: Follow a Deep Link**
+**Option 1: Generate a Deep Link**
 
 ```bash
 goose recipe deeplink recipes/x-news-digest.yaml
-goose recipe deeplink recipes/x-conversations.yaml
 ```
 
-This outputs a `goose://recipe?config=...` URL. Paste it in a browser to preview what it will output in Goose Desktop.
+This outputs a `goose://recipe?config=...` URL. Paste it in a browser to import into Goose Desktop.
 
 **Option 2: Import in Goose Desktop**
 
 1. Open **Goose Desktop**
 2. Click **Recipes** in the sidebar
 3. Click **Import Recipe** or browse for file
-4. Either past the link generated in Option 1 in the **Recipe Deeplink** input box, or choose a recipe from the `recipes/` folder in the **Recipe File** input field.
+4. Choose `recipes/x-news-digest.yaml` from the **Recipe File** input field
 
 **Option 3: Run via CLI**
-
-The outputs are in Markdown, enjoy!
 
 ```bash
 goose run --recipe recipes/x-news-digest.yaml
 ```
 
-(Not recommended for `x-conversations.yaml`, which return nothing because MCP Apps are iframes.)
-
-#### Schedule a Recipe
+#### Schedule the Recipe
 
 After importing, on the **Recipes** screen:
 
-1. Click the little clock icon next the the recipe you want to automate.
-2. In the **Add Schedule** modal, select the frequency and time you want the recipe to run.
+1. Click the clock icon next to the recipe
+2. Select the frequency and time in the **Add Schedule** modal
 3. Click **Save**
 
-**Note:** X News Digest requires Chrome running with `--remote-debugging-port=9222`.
+**Note:** Requires Chrome running with `--remote-debugging-port=9222`.
 
 ## Development
 
