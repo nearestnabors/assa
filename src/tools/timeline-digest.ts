@@ -12,6 +12,7 @@
 
 import { appendFileSync } from "node:fs";
 import { type Browser, chromium, type Page } from "playwright";
+import { getUsername } from "../state/manager.js";
 import { timestampFromSnowflake } from "../utils/time.js";
 
 const DEBUG_LOG = "/tmp/assa-timeline-debug.log";
@@ -356,7 +357,7 @@ function isOlderThan24Hours(timestamp: Date): boolean {
 async function scrollAndCollectTweets(page: Page): Promise<TimelineTweet[]> {
   const allTweets = new Map<string, TimelineTweet>();
   let scrollAttempts = 0;
-  const minScrollAttempts = 3; // Always scroll at least this many times
+  const minScrollAttempts = 10; // Always scroll at least this many times to get good coverage
   const maxScrollAttempts = 50; // Safety limit
   let foundOldTweet = false;
 
@@ -397,7 +398,8 @@ async function scrollAndCollectTweets(page: Page): Promise<TimelineTweet[]> {
     }
 
     // Scroll down - use mouse wheel which is more human-like
-    await page.mouse.wheel(0, 800);
+    // Scroll a full viewport height for better coverage
+    await page.mouse.wheel(0, 1200);
 
     // Wait for new content to load (human-like delay)
     await humanDelay(2000, 4000);
@@ -503,6 +505,10 @@ export async function xTimelineDigest(): Promise<unknown> {
   let page: Page | null = null;
 
   try {
+    // Get authenticated username to filter out user's own tweets
+    const myUsername = getUsername()?.toLowerCase();
+    debugLog("Filtering out tweets from user", { myUsername });
+
     // Connect to existing Chrome browser
     browser = await connectToBrowser();
 
@@ -513,7 +519,20 @@ export async function xTimelineDigest(): Promise<unknown> {
     await navigateToFollowing(page);
 
     // Scroll and collect tweets
-    const tweets = await scrollAndCollectTweets(page);
+    let tweets = await scrollAndCollectTweets(page);
+
+    // Filter out user's own tweets
+    if (myUsername) {
+      const beforeCount = tweets.length;
+      tweets = tweets.filter(
+        (t) => t.authorUsername.toLowerCase() !== myUsername
+      );
+      debugLog("Filtered out user's own tweets", {
+        before: beforeCount,
+        after: tweets.length,
+        removed: beforeCount - tweets.length,
+      });
+    }
 
     debugLog("Timeline digest complete", {
       tweetCount: tweets.length,
