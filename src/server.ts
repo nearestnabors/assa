@@ -177,12 +177,12 @@ const TOOLS: Tool[] = [
   {
     name: "x_timeline_digest",
     description:
-      "Fetch your Twitter/X Following timeline from the past 24 hours. " +
-      "IMPORTANT: Requires Chrome running with --remote-debugging-port=9222 and logged into Twitter/X. " +
-      "Returns tweets with links. When summarizing: " +
-      "(1) SKIP ads, promotional content, and marketing-speak tweets. " +
+      "Fetch your X Following timeline from the past 24 hours. " +
+      "IMPORTANT: Requires Chrome running with --remote-debugging-port=9222 and logged into X. " +
+      "Returns posts with links. When summarizing: " +
+      "(1) SKIP ads, promotional content, marketing-speak, hate speech, and spam. " +
       "(2) Focus on interesting conversations, news, insights, and personal updates. " +
-      "(3) ALWAYS include markdown links to each tweet you reference (format: [@username](tweet_url)) " +
+      "(3) ALWAYS include markdown links to each post you reference (format: [@username](post_url)) " +
       "so users can click to view/reply on X.",
     inputSchema: {
       type: "object",

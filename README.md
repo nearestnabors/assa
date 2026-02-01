@@ -134,43 +134,48 @@ google-chrome --remote-debugging-port=9222
 
 Then make sure you're logged into Twitter/X in that browser window.
 
-### Schedule Daily Digests with Goose Recipes
+### Goose Recipes
 
-Want to get your timeline digest automatically? Use a Goose recipe!
+ASSA includes two recipes for scheduled automation:
 
-#### Option 1: Generate a Deep Link
+| Recipe | Description |
+|--------|-------------|
+| `x-news-digest.yaml` | Daily digest of your Following timeline (requires Chrome with remote debugging) |
+| `x-conversations.yaml` | Check and respond to mentions/conversations |
 
-Generate a shareable deep link from the recipe file:
+#### Import a Recipe
+
+**Option 1: Generate a Deep Link**
 
 ```bash
-goose recipe deeplink recipes/twitter-digest.yaml
+goose recipe deeplink recipes/x-news-digest.yaml
+goose recipe deeplink recipes/x-conversations.yaml
 ```
 
-This outputs a `goose://recipe?config=...` URL that you can share. Paste it in a browser to import the recipe into Goose Desktop.
+This outputs a `goose://recipe?config=...` URL. Paste it in a browser to import into Goose Desktop.
 
-#### Option 2: Import YAML File in Goose Desktop
+**Option 2: Import in Goose Desktop**
 
 1. Open **Goose Desktop**
 2. Click **Recipes** in the sidebar
 3. Click **Import** or browse for file
-4. Select `recipes/twitter-digest.yaml`
+4. Select a recipe from `recipes/`
 
-#### Option 3: Run Directly via CLI
-
-Run the recipe immediately without importing:
+**Option 3: Run via CLI**
 
 ```bash
-goose run --recipe recipes/twitter-digest.yaml
+goose run --recipe recipes/x-news-digest.yaml
+goose run --recipe recipes/x-conversations.yaml
 ```
 
-#### Scheduling the Recipe
+#### Schedule a Recipe
 
-After importing the recipe, schedule it to run automatically:
+After importing, schedule recipes to run automatically:
 
 1. Open **Goose Desktop**
 2. Click **Scheduler** in the sidebar
-3. Click **Add** or **+** to create a new scheduled task
-4. Select the "Twitter Timeline Digest" recipe
+3. Click **Add** or **+**
+4. Select a recipe (e.g., "X News Digest")
 5. Set your preferred schedule
 
 **Cron schedule examples:**
@@ -178,7 +183,7 @@ After importing the recipe, schedule it to run automatically:
 - `0 9 * * 1-5` — 9 AM weekdays only
 - `0 9,18 * * *` — 9 AM and 6 PM daily
 
-**Important:** Chrome must be running with `--remote-debugging-port=9222` for scheduled runs to work.
+**Note:** The X News Digest requires Chrome running with `--remote-debugging-port=9222`.
 
 ## Development
 
