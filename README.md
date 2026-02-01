@@ -140,39 +140,41 @@ Want to get your timeline digest automatically? Use a Goose recipe!
 
 #### Option 1: Deep Link (One-Click Import)
 
-Click this link to import the recipe directly into Goose Desktop:
+Paste this URL in your browser to import the recipe into Goose Desktop:
 
 ```
-goose://recipe?url=https://raw.githubusercontent.com/nearestnabors/assa/main/recipes/twitter-digest.yaml
+goose://recipe?url=https://raw.githubusercontent.com/nearestnabors/assa/main/assa-mcp-starter/recipes/twitter-digest.yaml
 ```
 
-Or generate a deep link from the local file:
+Or generate a deep link from your local clone:
 ```bash
 goose recipe deeplink recipes/twitter-digest.yaml
 ```
 
+**Note:** This imports the recipe but doesn't schedule it automatically. See [Scheduling the Recipe](#scheduling-the-recipe) below.
+
 #### Option 2: YAML File (CLI)
 
-1. Copy the recipe file from `recipes/twitter-digest.yaml`
-
-2. Run it with Goose CLI:
+1. Run it directly with Goose CLI:
    ```bash
    goose run --recipe recipes/twitter-digest.yaml
    ```
 
-3. Or import it into Goose Desktop:
+2. Or import it into Goose Desktop:
    ```bash
    goose recipe open recipes/twitter-digest.yaml
    ```
 
 #### Scheduling the Recipe
 
-Once imported, you can schedule the recipe to run automatically:
+After importing, schedule the recipe to run automatically:
 
 1. Open **Goose Desktop**
-2. Go to **Settings** > **Routines**
-3. Find "Twitter Timeline Digest"
-4. Set your preferred schedule (e.g., daily at 9 AM)
+2. Go to **Settings** (gear icon)
+3. Select **Scheduled Tasks** or **Routines**
+4. Click **Add Schedule** or **+**
+5. Select the "Twitter Timeline Digest" recipe
+6. Set your preferred schedule (e.g., daily at 9 AM)
 
 **Cron schedule examples:**
 - `0 9 * * *` — 9 AM daily
