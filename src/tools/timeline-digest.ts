@@ -118,7 +118,10 @@ async function createTwitterPage(browser: Browser): Promise<Page> {
 async function navigateToFollowing(page: Page): Promise<void> {
   // Navigate to Twitter home
   debugLog("Navigating to Twitter home");
-  await page.goto(TWITTER_HOME_URL, { waitUntil: "domcontentloaded" });
+  await page.goto(TWITTER_HOME_URL, {
+    waitUntil: "domcontentloaded",
+    timeout: 30_000, // 30s timeout for navigation
+  });
   await humanDelay(2000, 3000);
 
   // Look for and click the "Following" tab
@@ -128,7 +131,7 @@ async function navigateToFollowing(page: Page): Promise<void> {
 
     // Wait for tweets to load first (indicates page is ready)
     await page.waitForSelector('article[data-testid="tweet"]', {
-      timeout: 10_000,
+      timeout: 30_000, // 30s timeout for tweets to appear
     });
 
     // The Following tab is a div[role="tab"] with "Following" text inside
@@ -234,9 +237,15 @@ async function extractVisibleTweets(page: Page): Promise<TimelineTweet[]> {
           continue;
         }
 
-        // Extract tweet text
-        const textEl = tweetEl.locator('[data-testid="tweetText"]').first();
-        const text = (await textEl.textContent()) || "";
+        // Extract tweet text (with short timeout to skip problematic tweets)
+        let text = "";
+        try {
+          const textEl = tweetEl.locator('[data-testid="tweetText"]').first();
+          text = (await textEl.textContent({ timeout: 2000 })) || "";
+        } catch {
+          // Skip tweets without text (ads, promoted content, etc.)
+          continue;
+        }
 
         // Extract author info
         const authorLink = await tweetEl
