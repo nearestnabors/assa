@@ -6,7 +6,11 @@
  */
 
 import { appendFileSync } from "node:fs";
-import { AuthRequiredError, executeTool } from "../arcade/client.js";
+import {
+  AuthRequiredError,
+  arcadeClient,
+  executeTool,
+} from "../arcade/client.js";
 import {
   getUsername,
   isDismissed,
@@ -29,6 +33,9 @@ function debugLog(message: string, data?: unknown) {
     // ignore write errors
   }
 }
+
+// Regex for extracting @mentions from tweet text (top-level for performance)
+const MENTION_PATTERN = /^(@\w+\s*)+/;
 
 interface Tweet {
   id: string;
@@ -260,8 +267,10 @@ async function fetchConversations(
       // Check each user tweet to see if it looks like a reply
       for (const tweet of userTweets) {
         // Extract @mentions from the start of the tweet
-        const mentionMatch = tweet.text.match(/^(@\w+\s*)+/);
-        if (!mentionMatch) continue;
+        const mentionMatch = tweet.text.match(MENTION_PATTERN);
+        if (!mentionMatch) {
+          continue;
+        }
 
         // Get all usernames mentioned at the start
         const mentionedUsernames = mentionMatch[0]
@@ -269,19 +278,27 @@ async function fetchConversations(
           .match(/@(\w+)/g)
           ?.map((m) => m.slice(1)); // Remove @ prefix
 
-        if (!mentionedUsernames) continue;
+        if (!mentionedUsernames) {
+          continue;
+        }
 
         const userTweetTime = timestampFromSnowflake(tweet.id);
-        if (!userTweetTime) continue;
+        if (!userTweetTime) {
+          continue;
+        }
 
         // Check if any of the mentioned users have mentions to us that are older
         for (const mentionedUser of mentionedUsernames) {
           const theirMentions = mentionsByAuthor.get(mentionedUser);
-          if (!theirMentions) continue;
+          if (!theirMentions) {
+            continue;
+          }
 
           for (const theirMention of theirMentions) {
             const mentionTime = timestampFromSnowflake(theirMention.id);
-            if (!mentionTime) continue;
+            if (!mentionTime) {
+              continue;
+            }
 
             // If our tweet is newer than their mention, we probably replied to it
             if (userTweetTime > mentionTime) {
@@ -474,8 +491,68 @@ async function fetchConversations(
 /**
  * Tool: x_conversations (for agent)
  * Returns a brief message - UI fetches full data via x_get_conversations
+ * If auth is needed, returns AuthRequiredResponse JSON for the UI
  */
 export async function xConversations(): Promise<unknown> {
+  // Check if we have a username - if not, we need auth
+  const username = getUsername();
+  if (!username) {
+    // Get auth data directly - return AuthRequiredResponse for UI
+    try {
+      const { oauthUrl, state, alreadyAuthorized } =
+        await arcadeClient.initiateAuth();
+
+      if (alreadyAuthorized) {
+        // Auth is actually good - proceed with fetch
+        const result = await fetchConversations();
+        if (!result.success) {
+          return result.content;
+        }
+        const count = result.data.conversations.length;
+        return {
+          content: [
+            {
+              type: "text",
+              text:
+                count === 0
+                  ? "No conversations awaiting your reply."
+                  : `${count} conversation${count === 1 ? "" : "s"} awaiting your reply.`,
+            },
+          ],
+        };
+      }
+
+      // Return auth data as JSON for UI to parse
+      const authData = {
+        authRequired: true,
+        service: "X",
+        authUrl: oauthUrl,
+        state,
+        message: "Connect your X account to view conversations.",
+      };
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(authData),
+          },
+        ],
+      };
+    } catch (error) {
+      debugLog("Error initiating auth in xConversations:", String(error));
+      return {
+        content: [
+          {
+            type: "text",
+            text: "Error connecting to X. Please try again.",
+          },
+        ],
+        isError: true,
+      };
+    }
+  }
+
   const result = await fetchConversations();
 
   if (!result.success) {

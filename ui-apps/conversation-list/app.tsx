@@ -45,6 +45,22 @@ export function ConversationListApp() {
     version: "1.0.0",
   });
 
+  // Handle auth error by fetching auth status
+  const handleAuthError = useCallback(
+    async (errorMessage: string) => {
+      const authResult = await callTool("x_auth_status", {});
+      const authResponseData = parseResult<AuthRequiredResponse>(authResult);
+      if (authResponseData && isAuthRequired(authResponseData)) {
+        setAuthData(authResponseData);
+        setAppState("auth-required");
+      } else {
+        setErrorMessage(errorMessage || "Authentication required");
+        setAppState("error");
+      }
+    },
+    [callTool, parseResult]
+  );
+
   // Fetch conversations
   const fetchConversations = useCallback(
     async (loadMore = false) => {
@@ -56,8 +72,16 @@ export function ConversationListApp() {
           limit: PAGE_SIZE,
         });
 
-        const data = parseResult<ConversationsData>(result);
+        const data = parseResult<
+          ConversationsData | { error: boolean; message: string }
+        >(result);
         if (typeof data === "string" || !data) {
+          return;
+        }
+
+        // Check for auth error - tool returns error when username not set
+        if ("error" in data && data.error) {
+          await handleAuthError((data as { message?: string }).message || "");
           return;
         }
 
@@ -84,7 +108,7 @@ export function ConversationListApp() {
         setAppState("error");
       }
     },
-    [callTool, parseResult]
+    [callTool, parseResult, handleAuthError]
   );
 
   // Auth poller
@@ -100,27 +124,38 @@ export function ConversationListApp() {
       return;
     }
 
+    // Try to parse string as JSON (tool may return AuthRequiredResponse as JSON string)
+    let parsedData = initialData;
     if (typeof initialData === "string") {
-      if (!hasFetchedInitial.current) {
-        hasFetchedInitial.current = true;
-        fetchConversations(false);
+      try {
+        parsedData = JSON.parse(initialData);
+      } catch {
+        // Not JSON - treat as text message, fetch conversations
+        if (!hasFetchedInitial.current) {
+          hasFetchedInitial.current = true;
+          fetchConversations(false);
+        }
+        return;
       }
-      return;
     }
 
-    if (isAuthRequired(initialData)) {
-      setAuthData(initialData);
+    if (isAuthRequired(parsedData)) {
+      setAuthData(parsedData);
       setAppState("auth-required");
     } else if (
-      typeof initialData === "object" &&
-      initialData !== null &&
-      "conversations" in initialData
+      typeof parsedData === "object" &&
+      parsedData !== null &&
+      "conversations" in parsedData
     ) {
-      setConversations(initialData.conversations);
-      setUsername(initialData.username);
-      setTotalCount(initialData.totalCount);
-      setHasMore(initialData.hasMore);
+      setConversations(parsedData.conversations);
+      setUsername(parsedData.username);
+      setTotalCount(parsedData.totalCount);
+      setHasMore(parsedData.hasMore);
       setAppState("loaded");
+    } else if (!hasFetchedInitial.current) {
+      // Unknown format - try fetching
+      hasFetchedInitial.current = true;
+      fetchConversations(false);
     }
   }, [initialData, fetchConversations]);
 

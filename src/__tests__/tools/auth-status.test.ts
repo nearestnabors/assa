@@ -50,7 +50,7 @@ function isValidAuthRequiredResponse(
  * Required fields for AuthRequiredResponse
  * Used to generate test cases
  */
-const REQUIRED_FIELDS = [
+const _REQUIRED_FIELDS = [
   "authRequired",
   "service",
   "authUrl",
