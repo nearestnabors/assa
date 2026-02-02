@@ -6,6 +6,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/button";
+import { type AppState, StateContainer } from "@/components/state-container";
 import { useAuthPoller } from "@/hooks/use-auth-poller";
 import { useMcpApp } from "@/hooks/use-mcp-app";
 import {
@@ -30,10 +31,10 @@ interface TweetDraft {
   };
 }
 
-type AppState = "loading" | "auth-required" | "preview" | "success" | "error";
+type PreviewAppState = AppState | "preview";
 
 export function TweetPreviewApp() {
-  const [appState, setAppState] = useState<AppState>("loading");
+  const [appState, setAppState] = useState<PreviewAppState>("loading");
   const [authData, setAuthData] = useState<AuthRequiredResponse | null>(null);
   const [draft, setDraft] = useState<TweetDraft | null>(null);
   const [isPosting, setIsPosting] = useState(false);
@@ -72,7 +73,6 @@ export function TweetPreviewApp() {
       }>(result);
 
       if (data?.error) {
-        // Check if it's an auth error
         if (isAuthRequired(data)) {
           setAuthData(data as unknown as AuthRequiredResponse);
           setAppState("auth-required");
@@ -96,10 +96,7 @@ export function TweetPreviewApp() {
   const authPoller = useAuthPoller({
     callTool,
     openLink,
-    onAuthComplete: async () => {
-      // After re-auth, retry posting
-      await postTweet();
-    },
+    onAuthComplete: postTweet,
   });
 
   // Handle initial data
@@ -108,7 +105,6 @@ export function TweetPreviewApp() {
       return;
     }
 
-    // Handle string messages - shouldn't happen for tweet-preview
     if (typeof initialData === "string") {
       console.warn("Tweet preview received string instead of draft data");
       return;
@@ -127,107 +123,34 @@ export function TweetPreviewApp() {
     }
   }, [initialData]);
 
-  // Handle cancel
-  const handleCancel = async () => {
-    await updateContext("User cancelled the tweet draft.");
-  };
-
-  // Handle edit
-  const handleEdit = async () => {
+  const handleCancel = () => updateContext("User cancelled the tweet draft.");
+  const handleEdit = () => {
     if (draft) {
-      await updateContext(
-        `User wants to edit this tweet draft: "${draft.text}"`
-      );
+      updateContext(`User wants to edit this tweet draft: "${draft.text}"`);
     }
   };
-
-  // Handle connect
-  const handleConnect = async () => {
+  const handleConnect = () => {
     if (authData?.authUrl) {
-      await authPoller.startAuth(authData.authUrl);
+      authPoller.startAuth(authData.authUrl);
     }
   };
 
-  // Render loading
-  if (appState === "loading") {
+  // Use StateContainer for loading, auth, error, and success states
+  if (appState !== "preview") {
     return (
-      <div
-        className="container flex flex-col items-center justify-center gap-4"
-        style={{ padding: 40 }}
-      >
-        <div className="loading loading-lg" />
-        <p className="text-muted">Loading preview...</p>
-      </div>
-    );
-  }
-
-  // Render auth required
-  if (appState === "auth-required") {
-    return (
-      <div
-        className="container flex flex-col items-center gap-4"
-        style={{ padding: 40 }}
-      >
-        <h2>Connect to X</h2>
-        <p className="text-center text-muted">
-          Connect your X account to post this tweet.
-        </p>
-
-        {authPoller.isPolling ? (
-          <div className="flex flex-col items-center gap-2">
-            <div className="loading" />
-            <p className="text-muted">{authPoller.status}</p>
-          </div>
-        ) : (
-          <Button onClick={handleConnect} size="lg" variant="primary">
-            Connect {authData?.service || "X"}
-          </Button>
-        )}
-
-        {authPoller.error && (
-          <p style={{ color: "var(--color-error)" }}>
-            Error: {authPoller.error.message}
-          </p>
-        )}
-      </div>
-    );
-  }
-
-  // Render success
-  if (appState === "success") {
-    return (
-      <div
-        className="container flex flex-col items-center gap-4"
-        style={{ padding: 40 }}
-      >
-        <div style={{ fontSize: 48 }}>✓</div>
-        <h2 style={{ color: "var(--color-success)" }}>Tweet Posted!</h2>
-        <p className="text-muted">
-          Your tweet has been published successfully.
-        </p>
-      </div>
-    );
-  }
-
-  // Render error
-  if (appState === "error") {
-    return (
-      <div
-        className="container flex flex-col items-center gap-4"
-        style={{ padding: 40 }}
-      >
-        <div style={{ fontSize: 48 }}>✕</div>
-        <h2 style={{ color: "var(--color-error)" }}>Failed to Post</h2>
-        <p className="text-muted">{errorMessage}</p>
-        <div className="button-group">
-          <Button onClick={() => setAppState("preview")} variant="secondary">
-            Back to Preview
-          </Button>
-          <Button onClick={postTweet} variant="primary">
-            Try Again
-          </Button>
-        </div>
-      </div>
+      <StateContainer
+        authData={authData}
+        authDescription="Connect your X account to post this tweet."
+        authPoller={authPoller}
+        errorMessage={errorMessage}
+        loadingMessage="Loading preview..."
+        onBack={() => setAppState("preview")}
+        onConnect={handleConnect}
+        onRetry={postTweet}
+        state={appState as AppState}
+        successMessage="Your tweet has been published successfully."
+        successTitle="Tweet Posted!"
+      />
     );
   }
 
@@ -246,7 +169,7 @@ export function TweetPreviewApp() {
 
         {/* Reply context */}
         {draft.replyTo && (
-          <div className="quoted-tweet" style={{ marginTop: 0 }}>
+          <div className="quoted-tweet">
             <div className="quoted-author">
               Replying to @{draft.replyTo.author}
             </div>
@@ -277,7 +200,7 @@ export function TweetPreviewApp() {
         <div className={`char-count ${charStatus}`}>{draft.charCount}/280</div>
 
         {/* Actions */}
-        <div className="button-group" style={{ justifyContent: "flex-end" }}>
+        <div className="button-group justify-end">
           <Button onClick={handleCancel} variant="ghost">
             Cancel
           </Button>

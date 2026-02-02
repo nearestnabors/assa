@@ -45,9 +45,11 @@ export async function xAuthStatus(
 
   // Need actual OAuth - return JSON data for the auth-button UI app
   const authData = {
+    authRequired: true,
     service: "X",
     authUrl: oauthUrl,
     state,
+    message: "Connect your X account to continue.",
   };
 
   return {

@@ -10,6 +10,7 @@ import {
   ConversationCard,
   type ConversationItem,
 } from "@/components/conversation-card";
+import { type AppState, StateContainer } from "@/components/state-container";
 import { useAuthPoller } from "@/hooks/use-auth-poller";
 import { useMcpApp } from "@/hooks/use-mcp-app";
 import { type AuthRequiredResponse, isAuthRequired } from "@/hooks/utils";
@@ -20,8 +21,6 @@ interface ConversationsData {
   totalCount: number;
   hasMore: boolean;
 }
-
-type AppState = "loading" | "auth-required" | "loaded" | "error";
 
 const PAGE_SIZE = 10;
 
@@ -36,7 +35,6 @@ export function ConversationListApp() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Use ref to track offset for callback stability
   const offsetRef = useRef(0);
   const hasFetchedInitial = useRef(false);
 
@@ -47,11 +45,26 @@ export function ConversationListApp() {
     version: "1.0.0",
   });
 
+  // Handle auth error by fetching auth status
+  const handleAuthError = useCallback(
+    async (errorMessage: string) => {
+      const authResult = await callTool("x_auth_status", {});
+      const authResponseData = parseResult<AuthRequiredResponse>(authResult);
+      if (authResponseData && isAuthRequired(authResponseData)) {
+        setAuthData(authResponseData);
+        setAppState("auth-required");
+      } else {
+        setErrorMessage(errorMessage || "Authentication required");
+        setAppState("error");
+      }
+    },
+    [callTool, parseResult]
+  );
+
   // Fetch conversations
   const fetchConversations = useCallback(
     async (loadMore = false) => {
       try {
-        // Use ref for stable offset calculation
         const currentOffset = offsetRef.current;
         const newOffset = loadMore ? currentOffset + PAGE_SIZE : 0;
         const result = await callTool("x_get_conversations", {
@@ -59,40 +72,28 @@ export function ConversationListApp() {
           limit: PAGE_SIZE,
         });
 
-        const data = parseResult<ConversationsData>(result);
-
-        // Skip if we got a string instead of object
+        const data = parseResult<
+          ConversationsData | { error: boolean; message: string }
+        >(result);
         if (typeof data === "string" || !data) {
           return;
         }
 
-        if ("conversations" in data) {
-          console.log("[ASSA UI] fetchConversations response:", {
-            loadMore,
-            newConversations: data.conversations.length,
-            totalCount: data.totalCount,
-            hasMore: data.hasMore,
-            newOffset,
-          });
+        // Check for auth error - tool returns error when username not set
+        if ("error" in data && data.error) {
+          await handleAuthError((data as { message?: string }).message || "");
+          return;
+        }
 
+        if ("conversations" in data) {
           if (loadMore) {
-            setConversations((prev) => {
-              const updated = [...prev, ...data.conversations];
-              console.log(
-                "[ASSA UI] Updated conversations:",
-                prev.length,
-                "->",
-                updated.length
-              );
-              return updated;
-            });
+            setConversations((prev) => [...prev, ...data.conversations]);
           } else {
             setConversations(data.conversations);
           }
           setUsername(data.username);
           setTotalCount(data.totalCount);
           setHasMore(data.hasMore);
-          // Update both ref and state
           offsetRef.current = newOffset;
           setOffset(newOffset);
           setAppState("loaded");
@@ -107,7 +108,7 @@ export function ConversationListApp() {
         setAppState("error");
       }
     },
-    [callTool, parseResult]
+    [callTool, parseResult, handleAuthError]
   );
 
   // Auth poller
@@ -123,47 +124,53 @@ export function ConversationListApp() {
       return;
     }
 
-    // Handle string messages (e.g., "10 conversations awaiting...")
+    // Try to parse string as JSON (tool may return AuthRequiredResponse as JSON string)
+    let parsedData = initialData;
     if (typeof initialData === "string") {
-      // Only fetch once to prevent re-render loop
-      if (!hasFetchedInitial.current) {
-        hasFetchedInitial.current = true;
-        fetchConversations(false);
+      try {
+        parsedData = JSON.parse(initialData);
+      } catch {
+        // Not JSON - treat as text message, fetch conversations
+        if (!hasFetchedInitial.current) {
+          hasFetchedInitial.current = true;
+          fetchConversations(false);
+        }
+        return;
       }
-      return;
     }
 
-    if (isAuthRequired(initialData)) {
-      setAuthData(initialData);
+    if (isAuthRequired(parsedData)) {
+      setAuthData(parsedData);
       setAppState("auth-required");
     } else if (
-      typeof initialData === "object" &&
-      initialData !== null &&
-      "conversations" in initialData
+      typeof parsedData === "object" &&
+      parsedData !== null &&
+      "conversations" in parsedData
     ) {
-      setConversations(initialData.conversations);
-      setUsername(initialData.username);
-      setTotalCount(initialData.totalCount);
-      setHasMore(initialData.hasMore);
+      setConversations(parsedData.conversations);
+      setUsername(parsedData.username);
+      setTotalCount(parsedData.totalCount);
+      setHasMore(parsedData.hasMore);
       setAppState("loaded");
+    } else if (!hasFetchedInitial.current) {
+      // Unknown format - try fetching
+      hasFetchedInitial.current = true;
+      fetchConversations(false);
     }
   }, [initialData, fetchConversations]);
 
-  // Handle connect
   const handleConnect = async () => {
     if (authData?.authUrl) {
       await authPoller.startAuth(authData.authUrl);
     }
   };
 
-  // Handle load more
   const handleLoadMore = async () => {
     setIsLoadingMore(true);
     await fetchConversations(true);
     setIsLoadingMore(false);
   };
 
-  // Handle dismiss
   const handleDismiss = async (tweetId: string, replyCount: number) => {
     try {
       await callTool("x_dismiss_conversation", {
@@ -177,7 +184,6 @@ export function ConversationListApp() {
     }
   };
 
-  // Handle reply
   const handleReply = async (
     tweetId: string,
     _replyCount: number,
@@ -187,87 +193,36 @@ export function ConversationListApp() {
       text,
       reply_to_id: tweetId,
     });
-
     const data = parseResult<{ success?: boolean; error?: string }>(result);
     if (data?.error) {
       throw new Error(data.error);
     }
   };
 
-  // Handle view tweet
   const handleViewTweet = (tweetId: string, authorUsername: string) => {
     openLink(`https://x.com/${authorUsername}/status/${tweetId}`);
   };
 
-  // Render loading
-  if (appState === "loading") {
+  const handleRetry = () => {
+    setAppState("loading");
+    setErrorMessage(null);
+    hasFetchedInitial.current = false;
+    fetchConversations(false);
+  };
+
+  // Use StateContainer for loading, auth, and error states
+  if (appState !== "loaded") {
     return (
-      <div
-        className="container flex flex-col items-center justify-center gap-4"
-        style={{ padding: 40 }}
-      >
-        <div className="loading loading-lg" />
-        <p className="text-muted">Loading conversations...</p>
-      </div>
-    );
-  }
-
-  // Render auth required
-  if (appState === "auth-required") {
-    return (
-      <div
-        className="container flex flex-col items-center gap-4"
-        style={{ padding: 40 }}
-      >
-        <h2>Connect to X</h2>
-        <p className="text-center text-muted">
-          Connect your X account to view your conversations.
-        </p>
-
-        {authPoller.isPolling ? (
-          <div className="flex flex-col items-center gap-2">
-            <div className="loading" />
-            <p className="text-muted">{authPoller.status}</p>
-          </div>
-        ) : (
-          <Button onClick={handleConnect} size="lg" variant="primary">
-            Connect {authData?.service || "X"}
-          </Button>
-        )}
-
-        {authPoller.error && (
-          <p style={{ color: "var(--color-error)" }}>
-            Error: {authPoller.error.message}
-          </p>
-        )}
-      </div>
-    );
-  }
-
-  // Render error state
-  if (appState === "error") {
-    return (
-      <div
-        className="container flex flex-col items-center gap-4"
-        style={{ padding: 40 }}
-      >
-        <h2>Something went wrong</h2>
-        <p className="text-center text-muted">
-          {errorMessage || "Failed to load conversations"}
-        </p>
-        <Button
-          onClick={() => {
-            setAppState("loading");
-            setErrorMessage(null);
-            hasFetchedInitial.current = false;
-            fetchConversations(false);
-          }}
-          size="lg"
-          variant="primary"
-        >
-          Try Again
-        </Button>
-      </div>
+      <StateContainer
+        authData={authData}
+        authDescription="Connect your X account to view your conversations."
+        authPoller={authPoller}
+        errorMessage={errorMessage || "Failed to load conversations"}
+        loadingMessage="Loading conversations..."
+        onConnect={handleConnect}
+        onRetry={handleRetry}
+        state={appState}
+      />
     );
   }
 
@@ -275,29 +230,20 @@ export function ConversationListApp() {
   const displayedCount = conversations.length;
   const remaining = totalCount - displayedCount;
 
-  console.log("[ASSA UI] Render:", {
-    displayedCount,
-    totalCount,
-    remaining,
-    hasMore,
-  });
-
   return (
     <div className="loaded container">
       <div
-        style={{
-          padding: "20px 20px 16px",
-          borderBottom: "1px solid var(--color-border)",
-        }}
+        className="p-16"
+        style={{ borderBottom: "1px solid var(--color-border)" }}
       >
-        <h2 style={{ marginTop: 0, marginBottom: 4 }}>Conversations</h2>
+        <h2 className="heading-flush">Conversations</h2>
         <p className="text-muted" style={{ fontSize: "var(--font-size-sm)" }}>
           @{username} ·{" "}
           {displayedCount === 0 ? "All caught up!" : `${totalCount} total`}
         </p>
       </div>
 
-      <div style={{ padding: 16 }}>
+      <div className="p-16">
         {displayedCount === 0 ? (
           <div className="empty-state">
             <div className="icon">✨</div>
