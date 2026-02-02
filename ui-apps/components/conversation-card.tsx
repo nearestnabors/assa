@@ -155,16 +155,8 @@ export function ConversationCard({
               <>
                 {" "}
                 <button
+                  className="link-button"
                   onClick={handleViewTweet}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "inherit",
-                    textDecoration: "underline",
-                    cursor: "pointer",
-                    padding: 0,
-                    font: "inherit",
-                  }}
                   type="button"
                 >
                   View on X
@@ -203,10 +195,7 @@ export function ConversationCard({
               placeholder={`Reply to @${conversation.author_username}...`}
               value={replyText}
             />
-            <div
-              className="button-group"
-              style={{ justifyContent: "space-between" }}
-            >
+            <div className="button-group justify-between">
               <div className={`char-count ${charStatus}`}>{charCount}/280</div>
               <div className="button-group">
                 <Button

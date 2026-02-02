@@ -230,7 +230,9 @@ async function fetchConversations(
     // Heuristic fallback: Arcade doesn't return referenced_tweets, so we use text matching
     // If user's tweet starts with @someone and was posted after that person's mention, it's likely a reply
     if (repliedToIds.size === 0 && userTweets.length > 0) {
-      debugLog("Using heuristic reply detection (referenced_tweets not available)");
+      debugLog(
+        "Using heuristic reply detection (referenced_tweets not available)"
+      );
 
       // Build a map of mentioner usernames to their mentions
       // Use userMap to get username from author_id since author_username may not be populated

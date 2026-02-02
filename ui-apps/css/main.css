@@ -47,8 +47,9 @@ a:active {
   background: var(--color-bg-primary);
   border-radius: var(--radius-non-interactive);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  max-width: 600px;
+  min-width: 45rem;
   width: 100%;
+  max-width: 75rem;
   padding: 0;
 }
 
@@ -572,6 +573,63 @@ button:disabled {
 
 .gap-4 {
   gap: 16px;
+}
+
+/* Padding utilities */
+.p-16 {
+  padding: 16px;
+}
+
+.p-40 {
+  padding: 40px;
+}
+
+/* Text color utilities */
+.text-error {
+  color: var(--color-error);
+}
+
+.text-success {
+  color: var(--color-success);
+}
+
+/* Icon sizing (for emoji icons) */
+.icon-lg {
+  font-size: 2rem;
+}
+
+.icon-xl {
+  font-size: 3rem;
+}
+
+/* Heading resets */
+.heading-flush {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+/* Button group alignment */
+.justify-between {
+  justify-content: space-between;
+}
+
+.justify-end {
+  justify-content: flex-end;
+}
+
+/* Link-styled button (inherits parent color) */
+.link-button {
+  background: none;
+  border: none;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+}
+
+.link-button:hover {
+  opacity: 0.8;
 }
 
 /* === TWEET CHIP (Compact digest view) === */
