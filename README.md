@@ -1,28 +1,27 @@
-# ASSA: Anti-Social Social Agent
+<div style="text-align: center">
+   <img style="display: inline-block;" width="500" alt="Anti Social Social Agent logo riffing on 'Anti Social Social Club' brannding" src="https://github.com/user-attachments/assets/2bb3f203-f344-48a7-9473-e91a7dd20a30" />
+   <h1>ASSA: the antisocial social agent extension</h1>
+</div>
 
-An MCP server that provides X (formerly Twitter) integration with rich UI components for [Goose](https://github.com/block/goose) and other MCP-compatible AI agents.
+ASSA lets you get timeline digests and have conversations with people on X (formerly Twitter)via rich UI components. Built for [Goose](https://github.com/block/goose) and other MCP-compatible AI agents.
 
 ## What is ASSA?
 
-Social media companies weaponize interfaces against humans (infinite scroll, notification anxiety, algorithmic rage bait). Agents are immune to psychological manipulation—they just execute.
+ASSA reclaims your social life by moving your activity off of algorithm driven sites and apps and into your personal agent, where you control the flow and decide how to engage. Enjoy:
 
-ASSA reclaims the social web by:
-
-- **Daily Digest**: Know what happened on X without opening the app
-- **Post with Approval**: Agent drafts, you review a rich preview, then approve
+- **Digest** tell you what's happening without opening any social app. Let your agent filter spam, ads, and hate speech!
+- **Have conversations** right in your agent's interface, no need to open the X app or site.
 
 ## Features
 
-- 🔐 **OAuth via Arcade**: Secure authentication without handling tokens yourself
-- 📊 **Rich UI Cards**: Mentions displayed with avatars, text, engagement metrics
-- ✍️ **Tweet Previews**: See exactly what will post, with character count
-- 🔁 **Human-in-the-Loop**: Nothing posts without your explicit approval
+- 🔐 **Safe authorization via Arcade**: Access you social accounts with sharing your password with an agent (or accidentally committing it, oops!)
+- 📊 **Interactive interface**: Mentions displayed with avatars, text. Respond right there!
+- 🔁 **You're in control**: Nothing posts without your explicit approval
 
 ## Installation
 
 ### Prerequisites
 
-- [Bun](https://bun.sh) 1.0+ (or Node.js 20+)
 - [Goose](https://github.com/block/goose) (or another MCP-compatible agent)
 - [Arcade.dev](https://arcade.dev) API key
 
@@ -33,46 +32,21 @@ ASSA reclaims the social web by:
 2. Clone and install:
 
    ```bash
-   git clone https://github.com/YOUR_USERNAME/assa-mcp
-   cd assa-mcp
+   git clone https://github.com/nearestnabors/assa
+   cd assa
    bun install
    bun run build
    ```
 
-3. Add to Goose (see below)
+3. Add to Goose App (recommended—Goose CLI can't display interactive UI!)
 
-### Add to Goose
+* In Goose's sidebar, go to **Extensiions**
+* Select "+ Add Custom Extension"
+* Add the command: `node PATH TO ASSA FOLDER/dist/index.js`
+* Add Environment variables `ARCADE_USER_ID` (the email you signed up to Arcade with) and `ARCADE_API_KEY` (get your [Arcade API key here]([url](https://app.arcade.dev/api-keys))
+* Select "Add Extension"
 
-Add to `~/.config/goose/config.yaml`:
-
-```yaml
-extensions:
-  assa:
-    type: stdio
-    command: node
-    args: ["/path/to/assa-mcp/dist/index.js"]
-    env:
-      ARCADE_API_KEY: your_api_key_here # <-- Required!
-      ARCADE_USER_ID: you@example.com # <-- Required! Your Arcade account email
-```
-
-**Important:**
-
-- `ARCADE_API_KEY` - Required. Get yours at [arcade.dev](https://arcade.dev)
-- `ARCADE_USER_ID` - Required. Must match the email address of your Arcade account. This is used to link OAuth authorizations to your account.
-
-#### Alternative: CLI setup
-
-```bash
-goose configure
-# Select "Add Extension"
-# Select "Command-line Extension"
-# Name: assa
-# Command: node /path/to/assa-mcp/dist/index.js
-# Then manually add the env section to the config file
-```
-
-## Usage
+## How to use
 
 ### Check X Activity
 
@@ -100,17 +74,6 @@ Post a tweet: "Just shipped a new feature! 🚀"
 Reply to @anthropic_devs saying I'll share slides after the talk
 ```
 
-## Tools
-
-| Tool                     | Description                                             |
-| ------------------------ | ------------------------------------------------------- |
-| `x_auth_status`          | Check authentication, show connect button if needed     |
-| `x_conversations`        | Show unreplied mentions as a conversation inbox         |
-| `x_dismiss_conversation` | Dismiss a conversation (reappears on new activity)      |
-| `x_draft_tweet`          | Create draft with preview                               |
-| `x_post_tweet`           | Post after approval                                     |
-| `x_timeline_digest`      | Fetch and summarize your Following timeline (past 24h)  |
-| `x_show_tweet`           | Display a single tweet as a rich card with reply option |
 
 ## Timeline Digest Setup
 
@@ -185,6 +148,18 @@ After importing, on the **Recipes** screen:
 3. Click **Save**
 
 **Note:** Requires Chrome running with `--remote-debugging-port=9222`.
+
+## Tools
+
+| Tool                     | Description                                             |
+| ------------------------ | ------------------------------------------------------- |
+| `x_auth_status`          | Check authentication, show connect button if needed     |
+| `x_conversations`        | Show unreplied mentions as a conversation inbox         |
+| `x_dismiss_conversation` | Dismiss a conversation (reappears on new activity)      |
+| `x_draft_tweet`          | Create draft with preview                               |
+| `x_post_tweet`           | Post after approval                                     |
+| `x_timeline_digest`      | Fetch and summarize your Following timeline (past 24h)  |
+| `x_show_tweet`           | Display a single tweet as a rich card with reply option |
 
 ## Development
 
@@ -335,19 +310,18 @@ ASSA MCP Server
 
 ### Next Steps
 
-- [ ] Make Authorize button more attractive
 - [ ] Make the "reply UI" smaller:
   - [ ] Add small "dismiss" and "reply" icons in the lower left corner of each card
   - [ ] Clicking "reply" replaces icons with input area and reply button
   - [ ] Clicking outside closes the UI and brings back the icons
-- [ ] If a Tweet is a reply, show the original tweet as a stylized quote above the comment
-- [ ] If a tweet quotes another tweet, show the quoted tweet below the comment
 
 ### Future
 
 - [ ] Add `X.GetMutedUsers` to Arcade to filter muted accounts from conversations
 - [ ] Add media expansion to Arcade to show images in tweets
 - [ ] VIP accounts feature (track specific users)
+- [ ] If a Tweet is a reply, show the original tweet as a stylized quote above the comment
+- [ ] If a tweet quotes another tweet, show the quoted tweet below the comment
 
 ### Known Limitations
 
@@ -356,7 +330,7 @@ ASSA MCP Server
 
 ## Credits
 
-Built for [MCP Connect 2026](https://mcpconnect.dev) by RL.
+Built for [MCP Connect 2026](https://mcpconnect.dev) by [RL Nabors](https://nearestnabors).
 
 Uses:
 
@@ -364,7 +338,3 @@ Uses:
 - [MCP Apps](https://github.com/anthropics/mcp-apps)
 - [Goose](https://github.com/block/goose)
 - [Arcade.dev](https://arcade.dev)
-
-## License
-
-MIT
