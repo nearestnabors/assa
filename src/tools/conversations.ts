@@ -503,7 +503,23 @@ export async function xConversations(): Promise<unknown> {
         await arcadeClient.initiateAuth();
 
       if (alreadyAuthorized) {
-        // Auth is actually good - proceed with fetch
+        // Auth is good but we don't have username cached - fetch it via X.WhoAmI
+        debugLog("alreadyAuthorized=true but no username, fetching via WhoAmI");
+        const whoami = await arcadeClient.getAuthenticatedUser();
+        if (!whoami?.data?.username) {
+          debugLog("X.WhoAmI failed to return username", whoami);
+          return {
+            content: [
+              {
+                type: "text",
+                text: "Failed to get your X username. Please try x_auth_status first.",
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        // Now proceed with fetch (username is now stored)
         const result = await fetchConversations();
         if (!result.success) {
           return result.content;
@@ -575,15 +591,19 @@ export async function xConversations(): Promise<unknown> {
 
 /**
  * Tool: x_get_conversations (for UI only, hidden from model)
- * Returns full conversation data as JSON with pagination support
+ * Returns full conversation data as JSON
+ * Note: Returns ALL conversations - UI handles pagination client-side
+ * to avoid race conditions with server-side offset-based pagination
  */
-export async function xGetConversations(params?: {
+export async function xGetConversations(_params?: {
   limit?: number;
   offset?: number;
 }): Promise<unknown> {
+  // Always fetch all conversations - UI handles pagination
+  // This avoids race conditions where offset doesn't match current data
   const result = await fetchConversations({
-    limit: params?.limit,
-    offset: params?.offset,
+    limit: 100,
+    offset: 0,
   });
 
   if (!result.success) {

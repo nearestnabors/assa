@@ -27,15 +27,15 @@ const PAGE_SIZE = 10;
 export function ConversationListApp() {
   const [appState, setAppState] = useState<AppState>("loading");
   const [authData, setAuthData] = useState<AuthRequiredResponse | null>(null);
-  const [conversations, setConversations] = useState<ConversationItem[]>([]);
+  // All conversations from server
+  const [allConversations, setAllConversations] = useState<ConversationItem[]>(
+    []
+  );
+  // Number of conversations to display (for client-side pagination)
+  const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
   const [username, setUsername] = useState<string>("");
-  const [totalCount, setTotalCount] = useState(0);
-  const [hasMore, setHasMore] = useState(false);
-  const [_offset, setOffset] = useState(0);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const offsetRef = useRef(0);
   const hasFetchedInitial = useRef(false);
 
   const { initialData, callTool, openLink, parseResult } = useMcpApp<
@@ -61,61 +61,44 @@ export function ConversationListApp() {
     [callTool, parseResult]
   );
 
-  // Fetch conversations
-  const fetchConversations = useCallback(
-    async (loadMore = false) => {
-      try {
-        const currentOffset = offsetRef.current;
-        const newOffset = loadMore ? currentOffset + PAGE_SIZE : 0;
-        const result = await callTool("x_get_conversations", {
-          offset: newOffset,
-          limit: PAGE_SIZE,
-        });
+  // Fetch all conversations from server
+  const fetchConversations = useCallback(async () => {
+    try {
+      const result = await callTool("x_get_conversations", {});
 
-        const data = parseResult<
-          ConversationsData | { error: boolean; message: string }
-        >(result);
-        if (typeof data === "string" || !data) {
-          return;
-        }
-
-        // Check for auth error - tool returns error when username not set
-        if ("error" in data && data.error) {
-          await handleAuthError((data as { message?: string }).message || "");
-          return;
-        }
-
-        if ("conversations" in data) {
-          if (loadMore) {
-            setConversations((prev) => [...prev, ...data.conversations]);
-          } else {
-            setConversations(data.conversations);
-          }
-          setUsername(data.username);
-          setTotalCount(data.totalCount);
-          setHasMore(data.hasMore);
-          offsetRef.current = newOffset;
-          setOffset(newOffset);
-          setAppState("loaded");
-        }
-      } catch (error) {
-        console.error("Failed to fetch conversations:", error);
-        setErrorMessage(
-          error instanceof Error
-            ? error.message
-            : "Failed to load conversations"
-        );
-        setAppState("error");
+      const data = parseResult<
+        ConversationsData | { error: boolean; message: string }
+      >(result);
+      if (typeof data === "string" || !data) {
+        return;
       }
-    },
-    [callTool, parseResult, handleAuthError]
-  );
+
+      // Check for auth error - tool returns error when username not set
+      if ("error" in data && data.error) {
+        await handleAuthError((data as { message?: string }).message || "");
+        return;
+      }
+
+      if ("conversations" in data) {
+        setAllConversations(data.conversations);
+        setUsername(data.username);
+        setDisplayCount(PAGE_SIZE); // Reset display count on fresh fetch
+        setAppState("loaded");
+      }
+    } catch (error) {
+      console.error("Failed to fetch conversations:", error);
+      setErrorMessage(
+        error instanceof Error ? error.message : "Failed to load conversations"
+      );
+      setAppState("error");
+    }
+  }, [callTool, parseResult, handleAuthError]);
 
   // Auth poller
   const authPoller = useAuthPoller({
     callTool,
     openLink,
-    onAuthComplete: () => fetchConversations(false),
+    onAuthComplete: () => fetchConversations(),
   });
 
   // Handle initial data
@@ -133,7 +116,7 @@ export function ConversationListApp() {
         // Not JSON - treat as text message, fetch conversations
         if (!hasFetchedInitial.current) {
           hasFetchedInitial.current = true;
-          fetchConversations(false);
+          fetchConversations();
         }
         return;
       }
@@ -147,15 +130,14 @@ export function ConversationListApp() {
       parsedData !== null &&
       "conversations" in parsedData
     ) {
-      setConversations(parsedData.conversations);
+      setAllConversations(parsedData.conversations);
       setUsername(parsedData.username);
-      setTotalCount(parsedData.totalCount);
-      setHasMore(parsedData.hasMore);
+      setDisplayCount(PAGE_SIZE);
       setAppState("loaded");
     } else if (!hasFetchedInitial.current) {
       // Unknown format - try fetching
       hasFetchedInitial.current = true;
-      fetchConversations(false);
+      fetchConversations();
     }
   }, [initialData, fetchConversations]);
 
@@ -165,10 +147,9 @@ export function ConversationListApp() {
     }
   };
 
-  const handleLoadMore = async () => {
-    setIsLoadingMore(true);
-    await fetchConversations(true);
-    setIsLoadingMore(false);
+  // Client-side pagination - just show more items
+  const handleLoadMore = () => {
+    setDisplayCount((prev) => prev + PAGE_SIZE);
   };
 
   const handleDismiss = async (tweetId: string, replyCount: number) => {
@@ -177,8 +158,7 @@ export function ConversationListApp() {
         tweet_id: tweetId,
         reply_count: replyCount,
       });
-      setConversations((prev) => prev.filter((c) => c.tweet_id !== tweetId));
-      setTotalCount((prev) => prev - 1);
+      setAllConversations((prev) => prev.filter((c) => c.tweet_id !== tweetId));
     } catch (error) {
       console.error("Failed to dismiss:", error);
     }
@@ -207,7 +187,7 @@ export function ConversationListApp() {
     setAppState("loading");
     setErrorMessage(null);
     hasFetchedInitial.current = false;
-    fetchConversations(false);
+    fetchConversations();
   };
 
   // Use StateContainer for loading, auth, and error states
@@ -226,9 +206,11 @@ export function ConversationListApp() {
     );
   }
 
-  // Render conversations
-  const displayedCount = conversations.length;
-  const remaining = totalCount - displayedCount;
+  // Client-side pagination - slice all conversations to display count
+  const visibleConversations = allConversations.slice(0, displayCount);
+  const totalCount = allConversations.length;
+  const hasMore = displayCount < totalCount;
+  const remaining = totalCount - visibleConversations.length;
 
   return (
     <div className="loaded container">
@@ -239,12 +221,12 @@ export function ConversationListApp() {
         <h2 className="heading-flush">Conversations</h2>
         <p className="text-muted" style={{ fontSize: "var(--font-size-sm)" }}>
           @{username} ·{" "}
-          {displayedCount === 0 ? "All caught up!" : `${totalCount} total`}
+          {totalCount === 0 ? "All caught up!" : `${totalCount} total`}
         </p>
       </div>
 
       <div className="p-16">
-        {displayedCount === 0 ? (
+        {totalCount === 0 ? (
           <div className="empty-state">
             <div className="icon">✨</div>
             <h3>All caught up!</h3>
@@ -252,7 +234,7 @@ export function ConversationListApp() {
           </div>
         ) : (
           <>
-            {conversations.map((conv) => (
+            {visibleConversations.map((conv) => (
               <ConversationCard
                 conversation={conv}
                 key={conv.tweet_id}
@@ -265,11 +247,7 @@ export function ConversationListApp() {
 
             {hasMore && (
               <div className="mt-4 text-center">
-                <Button
-                  loading={isLoadingMore}
-                  onClick={handleLoadMore}
-                  variant="secondary"
-                >
+                <Button onClick={handleLoadMore} variant="secondary">
                   Load more ({remaining} remaining)
                 </Button>
               </div>
