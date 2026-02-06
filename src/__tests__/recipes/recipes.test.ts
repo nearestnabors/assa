@@ -4,9 +4,9 @@
  * Ensures Goose recipe YAML files are valid and match expected schema.
  */
 
-import { readFileSync, readdirSync } from "node:fs";
-import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import yaml from "js-yaml";
 
 // Path to recipes directory (relative to project root)
