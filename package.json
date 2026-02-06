@@ -10,6 +10,7 @@
     "assa-mcp": "./dist/index.js"
   },
   "scripts": {
+    "prepare": "cp .hooks/* .git/hooks/ && chmod +x .git/hooks/*",
     "dev": "tsx watch src/index.ts",
     "build:ui": "rm -rf dist/ui && mkdir -p dist/ui && VITE_APP=auth-button vite build && VITE_APP=tweet-preview vite build && VITE_APP=conversation-list vite build",
     "build:server": "tsc",

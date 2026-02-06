@@ -1,0 +1,11 @@
+#!/bin/sh
+# Pre-commit hook: auto-fix lint/format issues before committing
+
+# Run Biome format (auto-fixes issues)
+bun run format
+
+# Stage any files that were auto-fixed
+git add -u
+
+# Run check to catch any remaining errors that can't be auto-fixed
+bun run check
