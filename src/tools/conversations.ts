@@ -493,89 +493,7 @@ async function fetchConversations(
  * Returns a brief message - UI fetches full data via x_get_conversations
  * If auth is needed, returns AuthRequiredResponse JSON for the UI
  */
-export async function xConversations(): Promise<unknown> {
-  // Check if we have a username - if not, we need auth
-  const username = getUsername();
-  if (!username) {
-    // Get auth data directly - return AuthRequiredResponse for UI
-    try {
-      const { oauthUrl, state, alreadyAuthorized } =
-        await arcadeClient.initiateAuth();
-
-      if (alreadyAuthorized) {
-        // Auth is good but we don't have username cached - fetch it via X.WhoAmI
-        debugLog("alreadyAuthorized=true but no username, fetching via WhoAmI");
-        const whoami = await arcadeClient.getAuthenticatedUser();
-        if (!whoami?.data?.username) {
-          debugLog("X.WhoAmI failed to return username", whoami);
-          return {
-            content: [
-              {
-                type: "text",
-                text: "Failed to get your X username. Please try x_auth_status first.",
-              },
-            ],
-            isError: true,
-          };
-        }
-
-        // Now proceed with fetch (username is now stored)
-        const result = await fetchConversations();
-        if (!result.success) {
-          return result.content;
-        }
-        const count = result.data.conversations.length;
-        return {
-          content: [
-            {
-              type: "text",
-              text:
-                count === 0
-                  ? "No conversations awaiting your reply."
-                  : `${count} conversation${count === 1 ? "" : "s"} awaiting your reply.`,
-            },
-          ],
-        };
-      }
-
-      // Return auth data as JSON for UI to parse
-      const authData = {
-        authRequired: true,
-        service: "X",
-        authUrl: oauthUrl,
-        state,
-        message: "Connect your X account to view conversations.",
-      };
-
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(authData),
-          },
-        ],
-      };
-    } catch (error) {
-      debugLog("Error initiating auth in xConversations:", String(error));
-      return {
-        content: [
-          {
-            type: "text",
-            text: "Error connecting to X. Please try again.",
-          },
-        ],
-        isError: true,
-      };
-    }
-  }
-
-  const result = await fetchConversations();
-
-  if (!result.success) {
-    return result.content;
-  }
-
-  const count = result.data.conversations.length;
+function conversationsSummaryResponse(count: number): unknown {
   return {
     content: [
       {
@@ -587,6 +505,93 @@ export async function xConversations(): Promise<unknown> {
       },
     ],
   };
+}
+
+async function fetchConversationsSummaryResponse(): Promise<unknown> {
+  const result = await fetchConversations();
+
+  if (!result.success) {
+    return result.content;
+  }
+
+  return conversationsSummaryResponse(result.data.conversations.length);
+}
+
+function conversationsAuthRequiredResponse(
+  oauthUrl: string,
+  state: string
+): unknown {
+  const authData = {
+    authRequired: true,
+    service: "X",
+    authUrl: oauthUrl,
+    state,
+    message: "Connect your X account to view conversations.",
+  };
+
+  return {
+    content: [
+      {
+        type: "text",
+        text: JSON.stringify(authData),
+      },
+    ],
+  };
+}
+
+function conversationsUsernameErrorResponse(): unknown {
+  return {
+    content: [
+      {
+        type: "text",
+        text: "Failed to get your X username. Please try x_auth_status first.",
+      },
+    ],
+    isError: true,
+  };
+}
+
+function conversationsConnectionErrorResponse(): unknown {
+  return {
+    content: [
+      {
+        type: "text",
+        text: "Error connecting to X. Please try again.",
+      },
+    ],
+    isError: true,
+  };
+}
+
+async function conversationsAuthResponse(): Promise<unknown> {
+  try {
+    const { oauthUrl, state, alreadyAuthorized } =
+      await arcadeClient.initiateAuth();
+
+    if (!alreadyAuthorized) {
+      return conversationsAuthRequiredResponse(oauthUrl, state);
+    }
+
+    debugLog("alreadyAuthorized=true but no username, fetching via WhoAmI");
+    const whoami = await arcadeClient.getAuthenticatedUser();
+    if (!whoami?.data?.username) {
+      debugLog("X.WhoAmI failed to return username", whoami);
+      return conversationsUsernameErrorResponse();
+    }
+
+    return fetchConversationsSummaryResponse();
+  } catch (error) {
+    debugLog("Error initiating auth in xConversations:", String(error));
+    return conversationsConnectionErrorResponse();
+  }
+}
+
+export async function xConversations(): Promise<unknown> {
+  if (getUsername()) {
+    return await fetchConversationsSummaryResponse();
+  }
+
+  return await conversationsAuthResponse();
 }
 
 /**

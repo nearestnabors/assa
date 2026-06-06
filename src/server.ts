@@ -177,7 +177,7 @@ const TOOLS: Tool[] = [
     name: "x_timeline_digest",
     description:
       "Fetch your X Following timeline from the past 24 hours. " +
-      "IMPORTANT: Requires Chrome running with --remote-debugging-port=9222 and logged into X. " +
+      "Uses Xquik when XQUIK_API_KEY is set; otherwise requires Chrome running with --remote-debugging-port=9222 and logged into X. " +
       "Returns posts with links. When summarizing: " +
       "(1) SKIP ads, promotional content, marketing-speak, hate speech, and spam. " +
       "(2) Focus on interesting conversations, news, insights, and personal updates. " +

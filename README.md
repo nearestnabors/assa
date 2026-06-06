@@ -149,6 +149,26 @@ After importing, on the **Recipes** screen:
 
 **Note:** Requires Chrome running with `--remote-debugging-port=9222`.
 
+#### Optional Xquik Timeline Backend
+
+Set `XQUIK_API_KEY` to fetch `x_timeline_digest` through the Xquik API instead
+of a local Chrome session. ASSA still uses Arcade for auth, posting, and
+conversation tools; this only changes the timeline digest data source.
+
+```yaml
+extensions:
+  assa:
+    type: stdio
+    command: node
+    args: ["/path/to/assa-mcp/dist/index.js"]
+    env:
+      ARCADE_API_KEY: "your_arcade_key"
+      ARCADE_USER_ID: "you@example.com"
+      XQUIK_API_KEY: "your_xquik_key"
+```
+
+`XQUIK_BASE_URL` is optional and defaults to `https://xquik.com/api/v1`.
+
 ## Tools
 
 | Tool                     | Description                                             |
