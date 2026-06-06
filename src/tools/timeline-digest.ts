@@ -18,12 +18,15 @@ import { timestampFromSnowflake } from "../utils/time.js";
 const DEBUG_LOG = "/tmp/assa-timeline-debug.log";
 const CDP_ENDPOINT = "http://127.0.0.1:9222";
 const TWITTER_HOME_URL = "https://x.com/home";
+const XQUIK_DEFAULT_BASE_URL = "https://xquik.com/api/v1";
+const XQUIK_API_CONTRACT = "2026-04-29";
 
 // 24 hours in milliseconds
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 
 // Regex patterns (top-level for performance)
 const TWEET_STATUS_REGEX = /\/status\/(\d+)/;
+const TRAILING_SLASHES_REGEX = /\/+$/;
 
 function debugLog(message: string, data?: unknown) {
   const timestamp = new Date().toISOString();
@@ -60,6 +63,152 @@ export interface TimelineTweet {
   isRetweet: boolean;
   isQuote: boolean;
   quotedTweetText?: string;
+}
+
+type JsonRecord = Record<string, unknown>;
+
+function isRecord(value: unknown): value is JsonRecord {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function stringValue(value: unknown): string | undefined {
+  return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
+function numberValue(value: unknown): number {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number.parseInt(value.replace(/[^0-9]/g, ""), 10);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+
+  return 0;
+}
+
+function dateFromXquik(value: unknown, tweetId: string): Date {
+  if (typeof value === "string") {
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed;
+    }
+  }
+
+  return timestampFromSnowflake(tweetId) || new Date();
+}
+
+function getXquikConfig(): { apiKey: string; baseUrl: string } | undefined {
+  const apiKey = process.env.XQUIK_API_KEY?.trim();
+  if (!apiKey) {
+    return undefined;
+  }
+
+  return {
+    apiKey,
+    baseUrl: normalizeXquikBaseUrl(process.env.XQUIK_BASE_URL),
+  };
+}
+
+export function normalizeXquikBaseUrl(rawBaseUrl: string | undefined): string {
+  const trimmed = rawBaseUrl?.trim();
+  const withoutSlash = (trimmed || XQUIK_DEFAULT_BASE_URL).replace(
+    TRAILING_SLASHES_REGEX,
+    ""
+  );
+
+  return withoutSlash.endsWith("/api/v1")
+    ? withoutSlash
+    : `${withoutSlash}/api/v1`;
+}
+
+export function timelineTweetFromXquik(value: unknown): TimelineTweet | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const id = stringValue(value.id);
+  const text = stringValue(value.text);
+  if (!(id && text)) {
+    return null;
+  }
+
+  const author = isRecord(value.author) ? value.author : {};
+  const authorUsername =
+    stringValue(author.username) ||
+    stringValue(author.screenName) ||
+    stringValue(value.authorUsername) ||
+    "unknown";
+  const authorDisplayName =
+    stringValue(author.name) ||
+    stringValue(author.displayName) ||
+    authorUsername;
+  const quotedTweet = isRecord(value.quoted_tweet)
+    ? value.quoted_tweet
+    : undefined;
+
+  return {
+    id,
+    text,
+    authorUsername,
+    authorDisplayName,
+    timestamp: dateFromXquik(value.createdAt, id),
+    likes: numberValue(value.likeCount),
+    retweets: numberValue(value.retweetCount),
+    replies: numberValue(value.replyCount),
+    isRetweet: isRecord(value.retweeted_tweet),
+    isQuote: value.isQuoteStatus === true || Boolean(quotedTweet),
+    quotedTweetText: quotedTweet ? stringValue(quotedTweet.text) : undefined,
+  };
+}
+
+async function fetchJsonResponse(response: Response): Promise<unknown> {
+  const body = await response.text();
+  if (!response.ok) {
+    throw new Error(
+      `Xquik timeline request failed with status ${response.status}: ${body.slice(
+        0,
+        200
+      )}`
+    );
+  }
+
+  try {
+    return JSON.parse(body) as unknown;
+  } catch {
+    throw new Error("Xquik timeline response was not valid JSON");
+  }
+}
+
+async function fetchXquikTimeline(): Promise<TimelineTweet[]> {
+  const config = getXquikConfig();
+  if (!config) {
+    return [];
+  }
+
+  const url = new URL(`${config.baseUrl}/x/timeline`);
+  debugLog("Fetching timeline through Xquik API", {
+    baseUrl: config.baseUrl,
+  });
+
+  const response = await fetch(url, {
+    headers: {
+      accept: "application/json",
+      "x-api-key": config.apiKey,
+      "xquik-api-contract": XQUIK_API_CONTRACT,
+    },
+  });
+  const payload = await fetchJsonResponse(response);
+
+  if (!(isRecord(payload) && Array.isArray(payload.tweets))) {
+    throw new Error("Xquik timeline response did not include tweets");
+  }
+
+  return payload.tweets
+    .map(timelineTweetFromXquik)
+    .filter((tweet): tweet is TimelineTweet => tweet !== null)
+    .filter((tweet) => !isOlderThan24Hours(tweet.timestamp));
 }
 
 /**
@@ -518,17 +667,22 @@ export async function xTimelineDigest(): Promise<unknown> {
     const myUsername = getUsername()?.toLowerCase();
     debugLog("Filtering out tweets from user", { myUsername });
 
-    // Connect to existing Chrome browser
-    browser = await connectToBrowser();
+    let tweets: TimelineTweet[];
+    if (getXquikConfig()) {
+      tweets = await fetchXquikTimeline();
+    } else {
+      // Connect to existing Chrome browser
+      browser = await connectToBrowser();
 
-    // Create a new tab for Twitter (don't interfere with user's browsing)
-    page = await createTwitterPage(browser);
+      // Create a new tab for Twitter (don't interfere with user's browsing)
+      page = await createTwitterPage(browser);
 
-    // Navigate to Following tab
-    await navigateToFollowing(page);
+      // Navigate to Following tab
+      await navigateToFollowing(page);
 
-    // Scroll and collect tweets
-    let tweets = await scrollAndCollectTweets(page);
+      // Scroll and collect tweets
+      tweets = await scrollAndCollectTweets(page);
+    }
 
     // Filter out user's own tweets
     if (myUsername) {
